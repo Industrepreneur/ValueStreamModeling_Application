@@ -1,0 +1,17 @@
+logs/
+logASP/
+.vs/
+packages/
+db.lock
+.suo
+
+
+App_Data/stevie/mpxmdb\.ldb
+
+*.mdb
+
+*.ldb
+
+App_Data/stevie/
+
+Charts/stevie/Graphs/

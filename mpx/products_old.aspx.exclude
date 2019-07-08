@@ -1,0 +1,92 @@
+﻿<%@ Page Title="" Language="C#" MasterPageFile="~/MasterPage.master" AutoEventWireup="true" CodeFile="products.aspx.cs" Inherits="products" %>
+
+<asp:Content ID="Content1" ContentPlaceHolderID="head" runat="Server">
+</asp:Content>
+<asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" runat="Server">
+
+    <h2>Products</h2>
+    
+    <div class="productMenu" style="display:none;">
+    <asp:Menu
+        ID="menuView"
+        ForeColor="black"
+        Orientation="Horizontal"
+        OnMenuItemClick="menuView_Click"
+        StaticMenuItemStyle-HorizontalPadding="0px"
+        StaticHoverStyle-ForeColor="white"
+        runat="server">
+        <StaticMenuItemStyle CssClass="productMenuItem" />
+        <StaticSelectedStyle CssClass="productMenuItemActive" />
+        
+    <Items>
+        <asp:MenuItem Text="Input Table" Value="0" Selected="true"></asp:MenuItem>
+        <asp:MenuItem Text="Operations/Routing Tables" Value="1"></asp:MenuItem>
+        <asp:MenuItem Text="All Operations Table" Value="2"></asp:MenuItem>
+        <asp:MenuItem Text="All Routing Table" Value="3"></asp:MenuItem>
+        <asp:MenuItem Text="IBOM Data Table" Value="4"></asp:MenuItem>
+    </Items>
+    </asp:Menu>
+        </div>
+    <div class="tabs">
+    <asp:MultiView ID="productView" ActiveViewIndex="0" runat="server">
+
+        <asp:View ID="productTable" runat="server">
+            <h3>Products Input Table</h3>
+                
+            <div class="datatable">
+                <div id="buttondiv" runat="server">
+                </div>
+                <br />
+                <asp:ScriptManagerProxy ID="ScriptManagerProxy1" runat="server"></asp:ScriptManagerProxy>
+                <asp:Panel ID="gridPanel" CssClass="gridPanel" ScrollBars="Auto" runat="server">
+                </asp:Panel>
+
+                <asp:Panel ID="secondPanel" runat="server">
+                </asp:Panel>
+                <br />
+
+                <asp:Panel ID="thirdPanel" runat="server">
+                </asp:Panel>
+
+                <asp:Panel ID="fourthPanel" runat="server"></asp:Panel>
+
+                <asp:Panel ID="fifthPanel" runat="server"></asp:Panel>
+
+                <div>
+
+                    <input type="hidden" id="selectedRowId" name="selectedRowId" />
+
+                    <asp:Label runat="server" ID="lblRow" Visible="false" />
+                    <asp:LinkButton runat="server" ID="btnDummy" />
+                    <asp:LinkButton runat="server" ID="btnDummy2" />
+                    <asp:LinkButton runat="server" ID="btnDummy3" />
+                </div>
+
+            </div>
+                    
+        </asp:View>
+        <asp:View ID="productOperRouting" runat="server">
+            <h3>Product Operations/Routing Tables</h3>
+            <div class="datatable">
+
+                <asp:DropDownList ID="dropListProducts" runat="server" AutoPostBack="True" onchange="choseibomassmby"
+                    DataSourceID="srcProductsList" DataTextField="prodDesc" 
+                    DataValueField="ProdID">
+                    <asp:ListItem Value="prodid">proddesc</asp:ListItem>
+                </asp:DropDownList>
+                <asp:AccessDataSource ID="srcProductsList" runat="server"></asp:AccessDataSource>
+            </div>
+        </asp:View>
+        <asp:View ID="productOper" runat="server">
+            <h3>All Operations Table</h3>
+        </asp:View>
+        <asp:View ID="productRouting" runat="server">
+            <h3>All Routing Table</h3>
+        </asp:View>
+        <asp:View ID="productIBOM" runat="server">
+            <h3>IBOM Data Table</h3>
+        </asp:View>
+    </asp:MultiView>
+        </div>
+</asp:Content>
+

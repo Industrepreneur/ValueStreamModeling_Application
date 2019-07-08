@@ -1,0 +1,146 @@
+<%@ Page Language="C#" AutoEventWireup="true" MasterPageFile="~/MasterPage.master" CodeFile="calculate.aspx.cs" Inherits="Runchoices" %>
+
+
+<asp:Content ID="Content1" ContentPlaceHolderID="head" runat="Server">
+    <script type="text/javascript">
+        function loadProgress() {
+            var xmlhttp;
+            if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+                xmlhttp = new XMLHttpRequest();
+            }
+            else {// code for IE6, IE5
+                xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            xmlhttp.onreadystatechange = function () {
+                if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                    document.getElementById('progressDiv').innerHTML = xmlhttp.responseText;
+                }
+            }
+            xmlhttp.open("GET", "Progress.ashx?type=r&b=" + new Date().getTime(), true);
+            xmlhttp.send();
+        }
+
+        var progressClock;
+
+        function scriptVerifyData() {
+            document.getElementById('progressDiv').innerHTML = "Verifying data...";
+            document.getElementById('btnCancelCalc').style.display = 'none';
+            $find('modalPopupLoadingBehavior').show();
+        }
+
+        function startProgressCheck() {
+            document.getElementById('progressDiv').innerHTML = "Verifying data...";
+            document.getElementById('btnCancelCalc').style.display = 'block';
+            setTimeout("loadProgress()", 1000);
+            try {
+                progressClock = setInterval("loadProgress()", 5000);
+            } catch (e) {
+
+            }
+
+        }
+
+        function stopProgressCheck() {
+            try {
+                window.clearInterval(progressClock);
+            } catch (e) {
+
+            }
+        }
+
+        function stopCalculations() {
+            document.getElementById('btnCancelCalc').style.display = 'none';
+            stopProgressCheck();
+            document.getElementById('progressDiv').innerHTML = "Cancelling calculations...";
+
+            var xmlhttp;
+            if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+                xmlhttp = new XMLHttpRequest();
+            }
+            else {// code for IE6, IE5
+                xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            xmlhttp.onreadystatechange = function () {
+                if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                    document.getElementById('progressDiv').innerHTML = xmlhttp.responseText;
+                }
+            }
+            xmlhttp.open("GET", "StopCalc.ashx?" + new Date().getTime(), true);
+            xmlhttp.send();
+        }
+
+
+    </script>
+</asp:Content>
+
+
+<asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" runat="Server">
+
+    <div>
+        <asp:ScriptManagerProxy ID="ScriptManagerProxy1" runat="server"></asp:ScriptManagerProxy>
+
+
+        <div style="position:absolute; left:0;right:0;top:0;bottom:0;background:white;">
+
+
+            <div style="text-align: center;" class="cmdbutton">
+                <asp:LinkButton ID="Buttonr1_v" runat="server"
+                    Text="VALIDATE"
+                    OnClick="buttonr1_v_click" cssClass="hidden"/>
+      
+                <asp:LinkButton ID="Buttonr1_b" runat="server" OnClick="buttonr1_b_click"
+                    Text="CALCULATE" />
+    
+
+                <asp:LinkButton ID="Buttonr1_a" runat="server" OnClick="buttonr1_a_click"
+                    Text="CALCULATE ALL" cssClass="hidden"/>
+       
+
+            </div>
+
+        </div>
+      
+            <asp:Panel ID="pnlMessage" runat="server" CssClass="pagePopup">
+                <div class="popPanel">
+                <div class="popHeader">
+                    <span class="popHeaderText">Results</span>
+                </div>
+                <div class="popMessage">
+                    <asp:Label ID="txtErrors" runat="server"></asp:Label>
+                    <asp:Label ID="txtResults" runat="server"></asp:Label>
+                </div>
+                <div class="popSubmit">
+                    <asp:Button ID="confirmResults" runat="server" UseSubmitBehavior="false" OnClick="confirmResults_Click" Text="OK" />
+                </div>
+                    </div>
+            </asp:Panel>
+
+
+   
+
+        <asp:Panel ID="pnlLoading" runat="server" CssClass="pagePopup" Style="display: none;">
+             <div class="popPanel" style="min-width:25vw;">
+                 <div class="popMessage" style="display:flex;">
+                     <div id="progressDiv" style="margin: auto auto auto 0px"></div>
+  <input id="btnCancelCalc" onclick="stopCalculations();" type="button" style="display: none; margin: auto 0px auto auto" value="CANCEL"/>
+                </div>
+         
+                  
+              
+            </div>
+         
+                 
+        </asp:Panel>
+
+        <ajaxToolkit:ModalPopupExtender ID="modalPopupLoading" runat="server"
+            TargetControlID="modalDummyDiv"
+            PopupControlID="pnlLoading"
+            BehaviorID="modalPopupLoadingBehavior"
+            BackgroundCssClass="modalBackground"
+            DropShadow="true">
+        </ajaxToolkit:ModalPopupExtender>
+        <div id="modalDummyDiv" runat="server"></div>
+    </div>
+
+</asp:Content>
+

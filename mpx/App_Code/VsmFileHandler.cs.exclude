@@ -1,0 +1,111 @@
+﻿
+using System;
+using System.Web;
+using System.IO;
+
+public class VsmFileHandler : IHttpHandler {
+
+    public void ProcessRequest(HttpContext context) {
+        bool authorized = false;
+
+        string requestedFile = context.Server.MapPath(context.Request.FilePath);
+        string chartDir = context.Server.MapPath("~");
+        if (!chartDir.EndsWith("\\")) {
+            chartDir += "\\";
+        }
+        chartDir += "Charts";
+
+        FileInfo file = new FileInfo(requestedFile);
+        if (!file.Extension.Remove(0, 1).ToLower().Equals("log") && !requestedFile.ToLower().Contains(chartDir.ToLower())) {
+            authorized = true;
+        } else {
+            chartDir += "\\";
+            ADODB.Connection conn = new ADODB.Connection();
+            ADODB.Recordset rec = new ADODB.Recordset();
+
+            HttpCookie cookie = HttpContext.Current.Request.Cookies[DbUse.LOGIN_COOKIE];
+            if (cookie != null) {
+                string cookieid = MyUtilities.clean(cookie.Value);
+                if (!cookieid.Equals(DbUse.LOGOUT_USERID)) {
+                    bool adoOpened = DbUse.OpenAdoMysql(conn);
+                    string commandString = "SELECT userlist.id, userlist.username, userlist.lastUpdate, userlist.usersub FROM userlist WHERE userlist.userid = '" + cookieid + "';";
+                    bool adoRecOpened = DbUse.OpenAdoRec(conn, rec, commandString);
+                    //if (!rec.EOF) {
+                    try {
+                        long lastUpdate = long.Parse(rec.Fields["lastUpdate"].Value.ToString());
+                        long currentTime = DateTime.Now.Ticks;
+                        string username = rec.Fields["username"].Value.ToString();
+                        chartDir += rec.Fields["usersub"].Value.ToString();
+                        if (currentTime - lastUpdate < DbPage.NANOSEC_100_IN_MINUTE * DbPage.TIMEOUT_IN_MINUTES) {
+                            if (username.Equals("admingla") || requestedFile.Contains(chartDir)) {
+                                authorized = true;
+                            }
+
+                        }
+
+
+                    } catch (Exception) { } finally {
+                        DbUse.CloseAdo(conn);
+                        DbUse.CloseAdoRec(rec);
+                    }
+                }
+                    
+                
+            }
+        }
+        if (authorized) {
+            SendContentTypeAndFile(context, requestedFile);
+        } else {
+            context.Response.Write("Authorization failed. Cannot access the file.");
+            context.Response.End();
+        }
+
+    }
+
+    public bool IsReusable {
+        get {
+            return false;
+        }
+    }
+
+    private HttpContext SendContentTypeAndFile(HttpContext context, String strFile) {
+        context.Response.ContentType = GetContentType(strFile);
+        context.Response.TransmitFile(strFile);
+        context.Response.End();
+
+        return context;
+    }
+
+    private string GetContentType(string filename) {
+        // used to set the encoding for the reponse stream 
+        string res = null;
+        System.IO.FileInfo fileinfo = new System.IO.FileInfo(filename);
+
+        if (fileinfo.Exists) {
+            switch (fileinfo.Extension.Remove(0, 1).ToLower()) {
+                case "png": {
+                        res = "image/png";
+                        break;
+                    }
+                case "jpg": {
+                    res = "image/jpeg";
+                    break;
+                }
+                case "jpeg": {
+                    res = "image/jpeg";
+                    break;
+                }
+                case "log": {
+                    res = "text/html";
+                    break;
+                }
+
+            }
+
+            return res;
+        }
+
+        return null;
+    }
+
+}

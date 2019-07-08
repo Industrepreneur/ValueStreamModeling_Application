@@ -1,0 +1,52 @@
+﻿<%@ WebHandler Language="C#" Class="Timer" %>
+
+using System;
+using System.Web;
+
+public class Timer : IHttpHandler {
+
+    public void ProcessRequest(HttpContext context) {
+        context.Response.ContentType = "text/plain";
+        context.Response.Write(GetTimeLeft());
+    }
+
+    public bool IsReusable {
+        get {
+            return false;
+        }
+    }
+
+    protected long GetTimeLeft() {
+        long secondsLeft = 0;
+        HttpCookie cookie = HttpContext.Current.Request.Cookies[DbUse.LOGIN_COOKIE];
+        ADODB.Connection conn = new ADODB.Connection();
+        ADODB.Recordset rec = new ADODB.Recordset();
+        if (cookie != null) {
+            string cookieid = cookie.Value;
+            if (!cookieid.Equals(DbUse.LOGOUT_USERID)) {
+                bool adoOpened = DbUse.OpenAdoMysql(conn);
+                string commandString = "SELECT * FROM userlist WHERE userid = '" + cookieid + "';";
+                bool adoRecOpened = DbUse.OpenAdoRec(conn, rec, commandString);
+                //if (!rec.EOF) {
+                try {
+                    long lastUpdate = long.Parse(rec.Fields["lastUpdate"].Value.ToString());
+                    long currentTime = DateTime.Now.Ticks;
+                    secondsLeft = DbPage.TIMEOUT_IN_MINUTES * DbPage.NANOSEC_100_IN_MINUTE - (currentTime - lastUpdate);
+                    secondsLeft = secondsLeft * 60 / DbPage.NANOSEC_100_IN_MINUTE;
+                    DbUse.CloseAdo(conn);
+                    DbUse.CloseAdoRec(rec);
+
+                } catch (Exception) { }
+                //}
+            }
+        }
+        return secondsLeft;
+    }
+
+    protected string GetDirectory() {
+        string dir = HttpContext.Current.Server.MapPath("Timer.ashx");
+        dir = dir.Substring(0, dir.IndexOf("Timer.ashx"));
+        return dir;
+    }
+
+}

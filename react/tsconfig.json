@@ -1,0 +1,41 @@
+{
+  "compilerOptions": {
+    "target": "es5",
+    "lib": ["dom", "es5", "scripthost", "es2015.promise", "esnext"],
+    "outDir": "./dist/",
+    "isolatedModules": false,
+    "downlevelIteration": true,
+    "module": "es2015",
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "importHelpers": true,
+    "allowSyntheticDefaultImports": true,
+    "sourceMap": true,
+    "noEmit": false,
+    "noImplicitAny": false,
+    "removeComments": false,
+    "preserveConstEnums": true,
+    "experimentalDecorators": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "pretty": true,
+    "jsx": "react",
+    "baseUrl": ".",
+    // "paths": {
+    //   //"@client/*": ["client/*"],
+    //   //"*": ["*", "client/components/*"]
+    //   "@zen/*": ["client/components/*"]
+    // }
+
+    "paths": {
+      "Utilities/*": ["src/utilities/*"],
+      "components/*": ["client/components/*"],
+      "@client/components/*": ["client/components/*"],
+      "@ZenComponents/*": ["ZenComponents/*"]
+    } 
+
+  },
+  "include": ["./client/AppIndex.tsx"],
+  "exclude": ["node_modules"]
+}

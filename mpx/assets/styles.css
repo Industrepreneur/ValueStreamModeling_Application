@@ -1,0 +1,11 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+
+.logo {
+  font-family:"Times New Roman", "_serif";
+  font-weight:bold;
+  font-style:italic;
+  font-size:18;
+}
+

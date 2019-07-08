@@ -1,0 +1,16 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+
+s|Panel {
+	margin:0px;
+	padding-top:0px;
+	padding-bottom:10px;
+	padding-left:0px;
+}
+
+.editGrid {
+	margin-left:0px;
+	margin-top:10px;
+	margin-bottom:10px;
+}

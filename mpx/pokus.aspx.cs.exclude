@@ -1,0 +1,69 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+
+public partial class pokus : SimpleGridPage
+{
+    
+    public pokus() {
+        FIELDS = new string[] { "LaborID", "LaborDesc", "LaborDept", "GrpSiz", "OT", "Slack%", "PriorityShare",  "Setup", "Run", "Varbility", "L1", "L2",  "L3", "L4", "LabComment" };
+        ADVANCED_FIELDS = new bool[] { false, false, false, false, false, false, true, true, true, true, true, true, true, true, false }; 
+        HEADERS = new string[] { null, "Labor Name", "Group / Dept / Area", "No. Working Simultaneously", "Overtime %", "% Time Unavailable", "Prioritize Use", "Setup Time Factor", "Run Time Factor", "Variability Factor", "L1", "L2", "L3", "L4", "Comment" }; 
+        
+        InitializeCombos();
+        InitializeCheckboxes();
+        CHECKBOXES[6] = true;
+        
+        TEXT_BOX_IDS = GetIDs(IDs.TEXT_BOX);
+        LABEL_IDS = GetIDs(IDs.LABEL);
+        TEXT_BOX_IDS2 = GetIDs2(IDs.TEXT_BOX);
+        LABEL_IDS2 = GetIDs2(IDs.LABEL);
+        
+        PAGENAME = "pokus.aspx";
+        TABLE_NAME = "tbllabor";
+        sortedTableName = TABLE_NAME;
+        defaultSortString = "ORDER BY tbllabor.LaborID";
+        
+    }
+    
+    protected void Page_Load(object sender, EventArgs e) {
+        base.Page_Load(sender, e);
+    }
+
+    private void InitializeComponent() {
+        pnlMainGrid = gridPanel;
+
+    }
+
+    protected override void OnInit(EventArgs e) {
+        InitializeComponent();
+        base.OnInit(e);
+    }
+
+    protected override Label getLblRow() {
+        return lblRow;
+    }
+
+    protected override Control getButtonDiv() {
+        return buttondiv;
+    }
+
+    protected override Panel GetSecondPanel() {
+        return secondPanel;
+    }
+
+    protected override Panel GetThirdPanel() {
+        return thirdPanel;
+    }
+
+    protected override Panel GetFourthPanel() {
+        return fourthPanel;
+    }
+
+    protected override Panel GetFifthPanel() {
+        return fourthPanel;
+    }
+}

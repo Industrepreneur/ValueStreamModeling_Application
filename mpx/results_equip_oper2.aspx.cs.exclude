@@ -1,0 +1,104 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.DataVisualization.Charting;
+using System.Web.UI.WebControls;
+
+public partial class results_equip_oper2 : EquipResultPage
+{
+    public results_equip_oper2() {
+        PAGENAME = "results_equip_oper2.aspx";
+
+        FIELDS = new string[] { "LaborDesc", "wid", "ProdDept", "LaborDesc", "EquipDesc", "eqsettime", "eqruntime", "labSetTime", "labRunTime" };
+        HEADERS = new string[] { null, "What-If Scenario", "Product Dept", "Labor Name", "Equip Name", "% used for Equip Setup", "% used for Equip Run", "% used for Labor Setup", "% used for Labor Run" };
+        sortedTableName = "tblRsOper_d2Eq";
+        
+        defaultSortString = "ORDER BY tblProdFore.ProdDept, tblLabor.LaborDesc, tblEquip.EquipDesc, tblRsOper.wid";
+        value = 3;
+        
+    }
+
+    protected void Page_Load(object sender, EventArgs e) {
+        base.Page_Load(sender, e);
+        if (dropListEquip.Items.Count > 0) {
+            if (dropListEquip.SelectedItem == null) {
+                dropListEquip.SelectedIndex = 0;
+            }
+        }
+
+        if (!Page.IsPostBack) {
+            SetTableQueryString(dropListEquip.SelectedValue);
+            this.SetTableData();
+            
+            
+        }
+    }
+
+    protected void SetTableQueryString(string id) {
+        tableQueryString = "SELECT zstblwhatif.familyid, tblProdFore.ProdDept, tblLabor.LaborDesc, tblEquip.EquipDesc, Sum(tblRsOper.EqSetTime) AS eqsettime, Sum(tblRsOper.EqRunTime) AS eqruntime, Sum(tblRsOper.LabSetTime) AS labSetTime, Sum(tblRsOper.LabRunTime) AS labRunTime, tblOper.EqID, IIf([zstblwhatif].[display],[zstblwhatif].[name],'_skip') AS wid "
+                         + " FROM ((((tblProdFore INNER JOIN tblOper ON tblProdFore.ProdID = tblOper.ProdFore) INNER JOIN tblEquip ON tblOper.EqID = tblEquip.EquipID) INNER JOIN tblLabor ON tblEquip.Labor = tblLabor.LaborID) INNER JOIN tblRsOper ON (tblOper.OpID = tblRsOper.OpID) AND (tblProdFore.ProdID = tblRsOper.ProdID)) INNER JOIN zstblwhatif ON tblRsOper.WID = zstblwhatif.WID "
+                         + " GROUP BY zstblwhatif.familyid, tblProdFore.ProdDept, tblLabor.LaborDesc, tblEquip.EquipDesc, tblOper.EqID, IIf([zstblwhatif].[display],[zstblwhatif].[name],'_skip'), tblRsOper.wid"
+                         + " HAVING (((IIf([zstblwhatif].[display],[zstblwhatif].[name],'_skip'))<>'_skip') AND ((Max(tblEquip.equipid))=" + id + "))";
+    }
+
+    protected override GridView getGridView() {
+        return grid;
+    }
+
+    protected override Chart getChart() {
+        return null;
+    }
+
+    public override Panel GetSortPanelContainer() {
+        return sortPanelContainer;
+    }
+
+
+    public override Control GetSortButtonContainer() {
+        return buttondiv;
+    }
+
+    protected override Control GetMenuContainer() {
+        return pnlMenu;
+    }
+
+    protected override Control GetTabsDiv() {
+        return tabsDiv;
+    }
+    protected void dropListEquip_SelectedIndexChanged(object sender, EventArgs e) {
+        
+        grid.PageIndex = 0;
+        RefreshData();
+        
+    }
+
+    protected override void OnInit(EventArgs e) {
+        base.OnInit(e);
+        if (!LocalTablesLinked()) {
+            ResetModelGoToModels();
+        }
+        string dataFile = GetDirectory() + userDir + "\\" + MAIN_USER_DATABASE;
+        srcEquipList.DataFile = dataFile;
+        dropListEquip.DataBind();
+        grid.EmptyDataText = "There are no results for this equipment group.";
+
+    }
+
+    protected override void RefreshData() {
+        SetTableQueryString(dropListEquip.SelectedValue);
+        base.RefreshData();
+    }
+
+    protected override Panel GetCopyTableContainer() {
+        return copyPanelContainer;
+    }
+
+    protected override bool LocalTablesLinked() {
+        if (!UpdateSql("SELECT EquipID FROM tblEquip;")) {
+            return false;
+        }
+        return true;
+    }
+}

@@ -1,0 +1,287 @@
+﻿<%@ WebHandler Language="C#" Class="Login" %>
+using System;
+using System.Web;
+using ADODB;
+    using System.Web.Services;
+
+
+public class Login : IHttpHandler
+{
+
+    private static Exception USER_EXCEPTION = new Exception();
+    private static Exception ALREADY_EXCEPTION = new Exception();
+    private static  Exception LOGIN_ERROR = new Exception();
+    private static  Exception SESSION_EXCEPTION = new Exception();
+    private static  Exception NULL_EXCEPTION = new Exception();
+
+    public partial class userInfo
+    {
+
+        public string username;
+        public string password;
+        public string cookie;
+
+    }
+
+    public void ProcessRequest (HttpContext context) {
+        context.Response.ContentType = "text/plain";
+        string username = context.Request.QueryString["username"];
+            string password = context.Request.QueryString["password"];
+            string cookie = context.Request.QueryString["cookie"];
+        context.Response.Write(ValidateLogin(username, password, cookie).ToString());
+    }
+
+    public bool IsReusable {
+        get {
+            return false;
+        }
+    }
+
+    [WebMethod]
+    public static int ValidateLogin(string username, string password, string cookie)
+    {
+
+       
+
+        int myReturnCase = -1;
+
+        try
+        {
+
+            RecognizeUser(username, password);
+            if (cookie == null)
+            {
+                throw NULL_EXCEPTION;
+            }
+            else
+            {
+                string cookieID = MyUtilities.clean(cookie);
+                isLoggedIn(username, cookieID);
+                hasSession(username, cookieID);
+            }
+
+            myReturnCase = 0;
+
+        }
+        catch (Exception myException)
+        {
+
+            if (myException == NULL_EXCEPTION)
+            {
+                myReturnCase = 0;
+            }
+
+            else if (myException == LOGIN_ERROR)
+            {
+
+                myReturnCase = 1;
+
+            }
+
+            else if (myException == USER_EXCEPTION)
+            {
+
+                myReturnCase = 2;
+
+            }
+
+            else if (myException == ALREADY_EXCEPTION)
+            {
+
+                myReturnCase = 3;
+
+            }
+
+            else if (myException == SESSION_EXCEPTION)
+            {
+                myReturnCase = 4;
+            }
+
+            else
+            {
+
+                myReturnCase = 5;
+
+            }
+
+        }
+
+        return myReturnCase;
+
+    }
+
+   private static void isLoggedIn(string username, string cookie)
+    {
+
+        Connection conn = new Connection();
+        Recordset rec = new Recordset();
+        string commandString = "SELECT * FROM userlist WHERE username = '" + username + "';";
+        bool openedCon = DbUse.OpenAdoMysql(conn);
+        bool openedRec = DbUse.OpenAdoRec(conn, rec, commandString);
+
+        string oldCookieID = rec.Fields["userid"].Value.ToString();
+        long sessionExpires = long.Parse(rec.Fields["sessionexpires"].Value.ToString());
+        long currentTime = DateTime.Now.Ticks;
+
+        //DOES THIS NEED TO CHECK FOR NEW COOKIE TO BE NULL??
+        if (!oldCookieID.Equals(DbUse.LOGOUT_USERID) && !oldCookieID.Equals(cookie))
+        {
+
+            if (DateTime.Now.Ticks < sessionExpires)
+            {
+                throw ALREADY_EXCEPTION;
+                //if User passed login, prompt to kick this person out? if yes, replace cookie/session/expire
+
+            }
+            else
+            {
+                DbUse.RunMysql("UPDATE userlist SET userlist.userid = '" + DbUse.LOGIN_COOKIE + "', userlist.sessionid = '" + null + "', userlist.sessionexpires = '" + 0 + "' WHERE userlist.username = '" + username + "' ; ");
+
+            }
+        }
+
+        DbUse.CloseAdoRec(rec);
+        DbUse.CloseAdo(conn);
+
+    }
+
+    private static void hasSession(string username, string cookie)
+    {
+
+        Connection conn = new Connection();
+        Recordset rec = new Recordset();
+        string commandString = "SELECT * FROM userlist WHERE username = '" + username + "';";
+        bool openedCon = DbUse.OpenAdoMysql(conn);
+        bool openedRec = DbUse.OpenAdoRec(conn, rec, commandString);
+
+        string oldCookieID = rec.Fields["userid"].Value.ToString();
+        long sessionExpires = long.Parse(rec.Fields["sessionexpires"].Value.ToString());
+        long currentTime = DateTime.Now.Ticks;
+
+
+        if (oldCookieID.Equals(cookie))
+        {
+            if (DateTime.Now.Ticks < sessionExpires)
+            {
+                throw SESSION_EXCEPTION;
+            }
+            else
+            {
+                DbUse.RunMysql("UPDATE userlist SET userlist.userid = '" + DbUse.LOGIN_COOKIE + "', userlist.sessionid = '" + null + "', userlist.sessionexpires = '" + 0 + "' WHERE userlist.username = '" + username + "' ; ");
+            }
+        }
+
+
+        DbUse.CloseAdoRec(rec);
+        DbUse.CloseAdo(conn);
+
+    }
+
+    private static void RecognizeUser(string username, string psswd)
+    {
+
+        string sqlString = "SELECT id, usercode FROM userlog WHERE username = '" + username + "';";
+        int id = -1;
+        Connection conn = new Connection();
+        Recordset rec = new Recordset();
+        bool openedCon = DbUse.OpenAdoMysql(conn);
+        bool openedRec = DbUse.OpenAdoRec(conn, rec, sqlString);
+
+
+        if (!openedCon || !openedRec)
+        {
+            throw LOGIN_ERROR;
+        }
+        else if (rec.EOF)
+        {
+            throw USER_EXCEPTION;
+        }
+        else
+        {
+            string correctHash = rec.Fields["usercode"].Value.ToString();
+            if (!PasswordHash.PasswordHash.ValidatePassword(psswd, correctHash))
+            {
+                throw USER_EXCEPTION;
+            }
+            else
+            {
+                if (int.TryParse(rec.Fields["id"].Value.ToString(), out id))
+                {
+                    if (id != -1)
+                    {
+                        // clean up previous calculation progress
+                        DbUse.RunMysql("DELETE usercalc.* FROM usercalc WHERE id = " + id);
+                    }
+                }
+
+            }
+        }
+
+        DbUse.CloseAdoRec(rec);
+        DbUse.CloseAdo(conn);
+
+    }
+
+}//end class
+
+//     if (!IsUserLoggedIn(strUsername))
+//    {
+//        string mySessionID = System.Web.HttpContext.Current.Session.SessionID;
+//        int sessionID = System.Web.HttpContext.Current.Session.LCID;
+//        //int sessionID = System.Diagnostics.Process.GetCurrentProcess().SessionId;
+//        string cookieid = MyUtilities.clean(DateTime.Now.ToString() + sessionID);
+//        cookieid = MyUtilities.clean(cookieid, ' '); // remove spaces
+//        cookieid = PasswordHash.PasswordHash.CreateHash(cookieid); //encode
+//        cookieid = MyUtilities.clean(cookieid);
+
+//        HttpCookie newcookie = new HttpCookie(DbUse.LOGIN_COOKIE)
+//        {
+//            Value = cookieid,
+//            //Expires = DateTime.Now.AddSeconds(30)
+//            Expires = DateTime.Now.AddMinutes(30)
+//        };
+//        Response.Cookies.Add(newcookie);
+
+
+//        SetCookieId(strUsername, cookieid, mySessionID, newcookie.Expires.Ticks);
+//        try
+//        {
+//            string lastNewLoginTime = GetMysqlDatabaseField("newLogin", cookieid);
+//            WriteLoginTimesToDb(DateTime.Now, lastNewLoginTime, cookieid);
+//            DeleteGraphs(); // delete all the graphs from last session
+//        }
+//        catch (Exception excep)
+//        {
+//            logFiles.ErrorLog(excep);
+//        }
+
+
+//    }
+//    else
+//    {
+
+//        throw new Exception(ERROR_DUPLICATE_LOGIN);
+//        //HOW TO ASK USER IF WE CAN KICK THIS USER?
+//    }
+//    //Server.Transfer(REDIRECT_PAGE);
+//    //Server.Transfer(PAGENAME);
+//    Response.Redirect(PAGENAME, true);
+//}
+//catch (Exception ex)
+//{
+
+//    //loginCount++;
+//    //hidden1.Value = loginCount + "";
+
+//    if (ex.Message.ToLower().IndexOf("object reference") == 0)
+//    {
+//        txtError += " " + ex.StackTrace;
+//    }
+//    else
+//    {
+//        txtError = ex.Message;
+//    }
+
+//}
+//lblError.Text = txtError;
+//lblError.CssClass = "lblErrorVis";

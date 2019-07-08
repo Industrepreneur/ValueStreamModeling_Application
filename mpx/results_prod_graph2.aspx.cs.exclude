@@ -1,0 +1,80 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.OleDb;
+using System.Drawing;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.DataVisualization.Charting;
+using System.Web.UI.WebControls;
+
+public partial class results_prod_graph2 : ProductResultPage
+{
+    public results_prod_graph2() {
+        PAGENAME = "results_prod_graph2.aspx";
+        FIELDS = new string[] { "prodid", "ProdDesc", "description", "LtWaitAsm", "LTEquip", "LTLabor", "LTSetup", "LTRun", "LTWaitLot" };
+        HEADERS = new string[] { null, "Product Name", "What-If Scenario", "Out of Area", "Time Waiting for Equip", "Time Waiting for Labor", "Time for Setup", "Time for Run", "Time Waiting for Rest of Lot" };
+        //     * sortedTableName = "tblRsProd   GctM";
+        defaultSortString = "ORDER BY tblProdFore.ProdDesc, tblRsProd.WID";
+        graphQueryString = "SELECT DISTINCTROW tblProdFore.ProdDesc, tblRsProd.LTEquip, tblRsProd.flowtime, tblRsProd.LTLabor, tblRsProd.LTSetup, tblRsProd.LTRun, tblRsProd.LTWaitLot, IIf([zstblwhatif].[display],[zstblwhatif].[name],'_skip') AS description, tblRsProd.WID, tblRsProd.LTWaitAsm "
+            + " FROM (tblRsProd INNER JOIN tblProdFore ON tblRsProd.ProdID = tblProdFore.ProdID) INNER JOIN zstblwhatif ON tblRsProd.WID = zstblwhatif.WID "
+            + " WHERE (((IIf([zstblwhatif].[display],[zstblwhatif].[name],'_skip'))<>'_skip'))";
+
+
+        sortedTableName = "tblRsProd1";
+        value = 1;
+
+        graphType = GraphType.STACKED_COLUMN;
+        DESC = new string[] { "description", "ProdDesc" };
+        FIELD_OFFSETS = new int[] { 2, 2 };
+
+        
+    }
+
+    protected void Page_Load(object sender, EventArgs e) {
+        base.Page_Load(sender, e);
+        if (Page.IsPostBack) {
+            Control postBackControl = GetPostBackControl(this.Page);
+            if (!postBackControl.ID.Equals(InputPageControls.BTN_OK_SORT)) {
+                this.SetGraphData();
+            }
+        }
+        if (!Page.IsPostBack) {
+            this.SetGraphData();
+        }
+    }
+
+    protected override Control GetTabsDiv() {
+        return tabsDiv;
+    }
+
+    protected override Control GetMenuContainer() {
+        return pnlMenu;
+    }
+
+    protected override GridView getGridView() {
+        return null;
+    }
+
+    protected override Chart getChart() {
+        return chart;
+    }
+
+    public override Panel GetSortPanelContainer() {
+        return sortPanelContainer;
+    }
+
+
+    public override Control GetSortButtonContainer() {
+        return buttondiv;
+    }
+
+    protected override void SetGraphData() {
+        SetGraphData("Products", "Manuf. Critical-path Times in Days", 7);
+    }
+
+    protected override Panel GetCopyTableContainer() {
+        return null;
+    }
+}

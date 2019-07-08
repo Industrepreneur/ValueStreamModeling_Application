@@ -1,0 +1,49 @@
+﻿<%@ Page Title="" Language="C#" MasterPageFile="~/MasterPage.master" AutoEventWireup="true" CodeFile="diagrams.aspx.cs" Inherits="diagrams" %>
+
+<asp:Content ID="Content1" ContentPlaceHolderID="head" runat="Server">
+</asp:Content>
+<asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" runat="Server">
+
+
+    <h2 style="margin-bottom: 0px;">Value Stream Modeling Diagrams</h2>
+    <div class="contentPanel">
+        
+            
+            <h4>Type of Diagram</h4>
+            
+            <div class="radioDiv">
+                <asp:RadioButton ID="radioShopOnly" Text="Shop Floor Only (Just equipment and labor info. No product info.)" Checked="true" CssClass="radioSepar" runat="server" GroupName="grpDiagramType" />
+            </div>
+            <div class="radioDiv">
+                <asp:RadioButton ID="radioProdOnly" Text="Product Routings Only (Just 1 product routing. No equipment or labor info.)" CssClass="radioSepar" runat="server" GroupName="grpDiagramType" />
+            </div>
+            <div class="radioDiv" style="margin-bottom:15px;">
+                <asp:RadioButton ID="radioShopProd" Text="Shop Floor + Product Routings (1 product routing info on top of equipment and labor info.)" CssClass="radioSepar" runat="server" GroupName="grpDiagramType" />
+            </div>
+
+        <h4>Product</h4>
+            <div class="radioDiv">
+                <asp:RadioButton ID="radioExProduct" Checked="true"  Text="Select Existing Product: " CssClass="radioSepar" runat="server" GroupName="grpProducts" />
+                <asp:DropDownList ID="dropListProducts" runat="server"
+                    DataSourceID="srcProductsList" DataTextField="ProdDesc"
+                    DataValueField="ProdID">
+                </asp:DropDownList>
+            </div>
+
+            <div class="radioDiv">
+                <asp:RadioButton ID="radioNewProduct" Text="Start New Product: " CssClass="radioSepar" runat="server" GroupName="grpProducts" />
+                <asp:TextBox ID="txtNewProduct" runat="server"></asp:TextBox>
+            </div>
+
+
+            <asp:AccessDataSource ID="srcProductsList"
+                SelectCommand="SELECT [ProdID], [ProdDesc] FROM [tblProdFore];"
+                runat="server"></asp:AccessDataSource>
+        
+
+            <asp:Button ID="btnShowDiagram" OnClick="btnShowDiagram_Click" runat="server" Text="Show Diagram" />
+        </div>
+   
+
+</asp:Content>
+

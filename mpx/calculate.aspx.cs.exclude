@@ -1,0 +1,477 @@
+﻿using System.Xml;
+using System;
+using System.IO;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Drawing;
+
+
+
+//   ,  as value for evel all ?  
+
+/*  todaytoday    if ...  public const short LAB_OVER_U = 1;
+         *            public const short EQ_OVER_U = 2;
+             show ....  can we see results from start of page / return to this page ???
+         * 
+         */
+
+public partial class Runchoices : DbPage
+{
+
+    int whatif_err;
+
+    ClassF classE1_1;
+
+    string resultsMessage;
+
+    public Runchoices() {
+        PAGENAME = "calculate.aspx";
+       
+    }
+
+    protected void Page_PreRender(Object sender, System.EventArgs e) {
+        this.Form.Attributes.Remove("onsubmit");
+        this.Form.Attributes.Add("onsubmit", "ShowProgressRun('" + pnlLoading.ClientID + "'); return true;");
+        Buttonr1_v.Attributes.Add("onclick", " this.disabled = true; scriptVerifyData(); return true;");
+        Buttonr1_b.Attributes.Add("onclick", " this.disabled = true; startProgressCheck();$find('modalPopupLoadingBehavior').show(); return true;");
+        Buttonr1_a.Attributes.Add("onclick", " this.disabled = true; startProgressCheck();$find('modalPopupLoadingBehavior').show(); return true;");
+       
+
+
+    }
+
+    protected void Page_Load(Object sender, System.EventArgs e) {   //Handles Me.Load
+        base.Page_Load(sender, e);
+        classE1_1.Open();
+        classE1_1.username = username;
+        // Load the first page 
+        string str1;
+        if (!Page.IsPostBack) {
+            pnlMessage.Visible = false;
+
+        }
+        //test 
+        //classE1_1.UpdateMPX();
+
+
+        try {
+            classE1_1.SetBasicModelInfo();  //  sets glngwid etc.
+
+
+            whatif_err = CalcClass.WHATIFSTOP_FLAG;
+
+            if (!Page.IsPostBack) {
+
+                SetCalculationLabels();
+            
+            }
+
+        } catch (Exception ex) {
+            Master.ShowErrorMessage("MPX internal error has occured.");
+        }
+        classE1_1.Close();
+        if (Page.IsPostBack) {
+            txtResults.Text = GetResMessage();
+            txtErrors.Text = GetErrMessage();
+            pnlMessage.Visible = true;
+            bool vis1 = !txtErrors.Text.Equals(String.Empty);
+            if (vis1 == true)
+            {
+                
+                txtErrors.Visible = true;
+                txtResults.Visible = false;
+     
+            }
+            else
+            {
+                txtErrors.Visible = false;
+                txtResults.Visible = true;
+            }
+        }
+
+    }  // end sub
+
+    //--------------------------------------------------------
+
+
+    private void SetCalculationLabels() {
+        string str1;
+        if (classE1_1.glngwid == 0) {
+        
+            Buttonr1_b.Text = "CALCULATE BASECASE";
+
+        } else {
+
+       
+
+            if (classE1_1.get_widname(classE1_1.glngwid).Length == 0) {  str1 = "No name ?"; } else
+            {
+                str1 = classE1_1.get_widname(classE1_1.glngwid);
+
+            }
+
+            Buttonr1_b.Text = "CALCULATE" + str1;
+           
+        }
+    }
+
+
+
+    //----------------------------------------------------
+
+    // verify input data
+    public void buttonr1_v_click(Object sender, System.EventArgs e) {
+
+        logFiles.RunLog();
+        if (DbUse.InRunProcess(userDir)) {
+            Master.ShowErrorMessage("Cannot start verification. The verification and calculations are still in process from the previous run. Please wait.");
+            logFiles.DuplicateRunEndLog();
+            return;
+        }
+        CreateRunFile();
+        try {
+            classE1_1.Open();
+            classE1_1.SetBasicModelInfo();  //  sets glngwid etc. 
+
+            classE1_1.errorMessageGlobal = "";
+
+            classE1_1.calc_return = 0;
+            classE1_1.ValidateData();
+
+            resultsMessage = do_calc_msg(classE1_1.calc_return, 0);
+            string errorMessage = GetErrorMessage();
+            txtErrors.Text = errorMessage;
+            txtResults.Text = resultsMessage;
+            save_errors_results(resultsMessage, errorMessage);
+            //  gwwd  see below ... pnlErrors.Visible = !errorMessage.Trim().Equals(String.Empty);
+            pnlMessage.Visible = true;
+            bool vis1 = !errorMessage.Trim().Equals(String.Empty);
+            if (vis1 == true)
+            {
+                txtErrors.Visible = true;
+                txtResults.Visible = false;
+            }
+            else
+            {
+                txtErrors.Visible = false;
+                txtResults.Visible = true;
+            }
+
+            classE1_1.Close();
+        } catch (Exception ex) {
+            classE1_1.Close();
+            logFiles.ErrorLog(ex);
+            Master.ShowErrorMessage("Value Stream Modeling internal error has occured. " + classE1_1.errorMessageGlobal);
+
+        }
+        DeleteRunFile();
+        logFiles.RunEndLog();
+    }
+
+    public void buttonr1_b_click(Object sender, System.EventArgs e) {
+        try {
+            classE1_1.username = username;
+            CalcClass.CalculationResult result = CalcClass.CalculateResults(classE1_1);
+
+            txtResults.Text = result.resultMessage;
+            txtErrors.Text = result.errorMessage;
+
+            pnlMessage.Visible = true;
+          
+            bool vis1 = !result.errorMessage.Trim().Equals(String.Empty);
+            if (vis1 == true)
+            {
+                txtErrors.Visible = true;
+                txtResults.Visible = false;
+            }
+            else
+            {
+                txtErrors.Visible = false;
+                txtResults.Visible = true;
+            }
+
+        } catch (Exception calcEx) {
+            Master.ShowErrorMessage(calcEx.Message);
+        }
+
+    }
+
+    public void buttonr1_a_click(Object sender, System.EventArgs e) {
+        LogFiles logFiles = new LogFiles(this.username);
+        logFiles.RunLog();
+
+        if (DbUse.InRunProcess(userDir)) {
+            Master.ShowErrorMessage("Cannot start verification and calculations. The verification and calculations are still in process from the previous run. Please wait.");
+            logFiles.DuplicateRunEndLog();
+            return;
+        }
+        CreateRunFile();
+
+        int ret;
+        string cookieid = MyUtilities.clean(Request.Cookies[DbUse.LOGIN_COOKIE].Value);
+        try {
+            classE1_1.Open();
+            classE1_1.SetBasicModelInfo();  //  sets glngwid etc.
+
+            classE1_1.calc_return = 0;     //0 - none, 1 labor, 2 eq over util, 4 warnings 8 errors 
+
+
+            //-----------------------------------------------------------------
+
+            // count all whatifs to be calculated and write it to the main mysql database
+            ADODB.Recordset recWhatifs = new ADODB.Recordset();
+            bool recOpened = DbUse.OpenAdoRec(classE1_1.globaldb, recWhatifs, "SELECT tblWhatIf.*, tblWhatIf.recalc  FROM tblWhatIf WHERE FamilyID = 0;");
+            int totalCalc = 1;
+            int currentCalc = 0;
+            while (!recWhatifs.EOF) {
+                totalCalc++;
+                recWhatifs.MoveNext();
+            }
+            DbUse.CloseAdoRec(recWhatifs);
+
+
+            DbUse.RunMysql("INSERT INTO usercalc (id) SELECT userlist.id FROM userlist WHERE userlist.userid = '" + cookieid + "';");
+            DbUse.RunMysql("UPDATE usercalc INNER JOIN userlist ON usercalc.id = userlist.id SET total = " + totalCalc + ", calc = " + currentCalc + ", lastCheck = " + DateTime.Now.Ticks + ", cancel = 0 WHERE userlist.userid = '" + cookieid + "';");
+            //////////////////////////////////////////////////////////////////////////////////////
+
+            classE1_1.global_runalldone = false;
+            classE1_1.global_initwid = classE1_1.glngwid;
+            classE1_1.errorMessageGlobal = "";
+
+            while (classE1_1.global_runalldone == false) {
+                classE1_1.calc_return = 0;
+                classE1_1.runall_from_display();
+            }
+
+
+            if (classE1_1.global_initwid != classE1_1.glngwid) {
+                if (classE1_1.global_initwid != 0) {
+                    classE1_1.LoadBaseCase();
+                    ret = classE1_1.LoadWhatIf(classE1_1.global_initwid);
+                } else {
+                    classE1_1.LoadBaseCase();
+                }
+            };
+
+
+            //-----------------------------------------------------------------
+
+
+            if ((classE1_1.calc_return & CalcClass.ERR_FLAG) > 0) {
+                resultsMessage = do_calc_msg(classE1_1.calc_return, 0);
+            } else {
+                resultsMessage = do_calc_msg(classE1_1.calc_return, 1);
+             }
+                /*  todaytoday    if ...  public const short LAB_OVER_U = 1;
+                 *            public const short EQ_OVER_U = 2;
+                     show ....
+                 * 
+                 */
+            string errorsMessage = GetErrorMessage();
+            txtResults.Text = resultsMessage;
+            txtErrors.Text = errorsMessage;
+            save_errors_results(resultsMessage, errorsMessage);
+            pnlMessage.Visible = true;
+            
+
+            
+            classE1_1.runsqlado("UPDATE zs0tblWhatif SET display = -1 WHERE WID = " + classE1_1.glngwid + ";");
+
+        } catch (Exception ex) {
+            logFiles.ErrorLog(ex);
+            Master.ShowErrorMessage("MPX internal error has occured. " + classE1_1.errorMessageGlobal);
+        }
+        classE1_1.Close();
+        DbUse.RunMysql("DELETE usercalc.* FROM usercalc INNER JOIN userlist ON usercalc.id = userlist.id WHERE userlist.userid = '" + cookieid + "';");
+        DeleteRunFile();
+        logFiles.RunEndLog();
+    }
+
+    string do_calc_msg(int calc_r, int mtype) {
+        return CalcClass.do_calc_msg(calc_r, mtype);
+
+    }
+
+    string do_baseline_opt_msg(int calc_r) {
+        string str1;
+
+        str1 = "<br/><br/>Calculations completed.  <br/><br/>";
+        if (((calc_r & CalcClass.LAB_OVER_U) == 0) & ((calc_r & CalcClass.EQ_OVER_U) == 0)) { str1 = ""; } else {
+            str1 += "   Production level cannot be sustained."
+                ;
+            if ((calc_r & CalcClass.LAB_OVER_U) > 0) { str1 += "<br/>   Some Labor Resources are Overutilized in the long run. "; }
+            if ((calc_r & CalcClass.EQ_OVER_U) > 0) { str1 += "<br/>   Some Equipment Resources are Overutilized in the long run. "; }
+            str1 += "<br/>   Manufacturing Critical-Path Time (MCT) and WIP cannot be computed. ";
+            str1 += "<br/>   Optimizations must start from a position where that MCT and WIP can be computed. ";
+        }
+        return str1;
+    }
+    //-----------------------------------------------------------
+
+ 
+   
+    public string GetErrorMessage() {
+        return CalcClass.GetErrorMessage(classE1_1);
+    }
+
+    public string GetResMessage() {
+        ADODB.Recordset reccust = null;
+        string resMessage = "";
+        try {
+            classE1_1.Open();
+            DbUse.open_ado_rec(classE1_1.globaldb, ref reccust, "zstblresults");
+
+            resMessage = "";
+            if (!reccust.EOF) {
+                resMessage = resMessage + (string)reccust.Fields["Results"].Value;
+                reccust.MoveNext();
+
+            }
+            if (reccust != null) {
+                reccust.Close();
+                reccust = null;
+            }
+            classE1_1.Close();
+        } catch (Exception ex) {
+            logFiles.ErrorLog(ex);
+        }
+        resMessage = resMessage.Replace("\n", "<br/>");
+
+        return DbUse.reproduceRedColor(resMessage);
+    }
+
+    public string GetErrMessage() {
+        ADODB.Recordset reccust = null;
+        string errMessage = "";
+        try {
+            classE1_1.Open();
+            DbUse.open_ado_rec(classE1_1.globaldb, ref reccust, "zstblresults");
+
+            errMessage = "";
+            if (!reccust.EOF) {
+                errMessage = errMessage + (string)reccust.Fields["errors"].Value;
+
+            }
+            if (reccust != null) {
+                reccust.Close();
+                reccust = null;
+            }
+            classE1_1.Close();
+        } catch (Exception) { }
+        return errMessage.Replace("\n", "<br/>");
+    }
+
+
+
+
+
+    public void save_errors_results(string msgResults, string msgErrors) {
+        CalcClass.save_errors_results(classE1_1, msgResults, msgErrors);
+    }
+
+
+    public void Clear_errors_results() {
+        string commandString;
+
+        commandString = "Delete zstblresults.* from  zstblresults;";
+        classE1_1.runsql(commandString);
+    }
+
+
+
+    protected void buttonshowequip(object sender, EventArgs e) {
+        Response.Redirect("results_equip.aspx");
+
+    }
+    protected void buttonshowlabor(object sender, EventArgs e) {
+        Response.Redirect("results_labor_table.aspx");
+
+    }
+    protected void buttonshowproduct(object sender, EventArgs e) {
+        Response.Redirect("results_prod_table.aspx");
+
+    }
+
+    protected override void OnInit(EventArgs e) {
+        base.OnInit(e);
+   
+        classE1_1 = new ClassF(GetDirectory() + userDir);
+        classE1_1.Close();
+
+    }
+
+    //protected override Control GetMenuContainer() {
+    //    return pnlMenu;
+    //}
+
+    //protected override Control GetTabsDiv() {
+    //    return tabsDiv;
+    //}
+
+    //protected override MultiView GetMultiView() {
+    //    return MPXRunChoices;
+    //}
+
+  
+
+
+
+
+    protected bool WhatifExists(string whatifName) {
+        bool exists = false;
+        ADODB.Recordset rec = new ADODB.Recordset();
+        DbUse.OpenAdoRec(classE1_1.globaldb, rec, "SELECT WID, Name FROM tblWhatif;");
+        try {
+            int i = 0;
+            while (!rec.EOF && !exists) {
+                if (i == 0) {
+                    rec.MoveFirst();
+                } else {
+                    rec.MoveNext();
+                }
+                exists = rec.Fields["Name"].Value.ToString().ToUpper().Equals(whatifName.ToUpper());
+                i++;
+            }
+        } catch (Exception) { }
+        DbUse.CloseAdoRec(rec);
+        return exists;
+    }
+
+
+
+    protected void CreateRunCookie() {
+        string cookieName = DbUse.RUN_COOKIE + username;
+        HttpCookie cookie = new HttpCookie(cookieName);
+        cookie.Value = username;
+        cookie.Expires = DateTime.Now.AddMinutes(5);
+        Response.Cookies.Add(cookie);
+    }
+
+    protected void CreateRunFile() {
+        DbUse.CreateRunFile(GetDirectory() + userDir, username);
+    }
+
+    protected void DeleteRunFile() {
+        DbUse.DeleteRunFile(GetDirectory() + userDir, username);
+    }
+
+
+
+    protected void DeleteRunCookie() {
+        string cookieName = DbUse.RUN_COOKIE + username;
+        HttpCookie cookie = Request.Cookies[cookieName];
+        if (cookie != null) {
+            cookie.Expires = cookie.Expires.AddDays(-1);
+        }
+    }
+
+
+
+    protected void confirmResults_Click(object sender, EventArgs e)
+    {
+        pnlMessage.Visible = false;
+    }
+}  //  End Class;

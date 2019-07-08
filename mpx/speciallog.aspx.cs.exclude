@@ -1,0 +1,234 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+
+public partial class speciallog : DbPage
+{
+    private int loginCount = 0;
+
+    private const string REDIRECT_PAGE = "models.aspx";
+
+    private const int MAX_TRIES = 5;
+
+    public speciallog() {
+        PAGENAME = "speciallog.aspx";
+    }
+
+    private const string ERROR_DUPLICATE_LOGIN = "Someone else is currently logged in under the same username. Please try logging in later.";
+    private const string ERROR_COOKIES = "Cookies which are necessary for successful log in could not save in your browser. Please enable cookies in your browser settings.";
+
+    string TRIAL_COOKIE = "trialCookie";
+
+    protected void Page_Load(object sender, EventArgs e) {
+        btnSubmit.Enabled = true;
+        HttpCookie cookie = new HttpCookie(TRIAL_COOKIE);
+        cookie.Expires = DateTime.Now.AddDays(1);
+        Response.Cookies.Add(cookie);
+        //cookiesEnabled = DbUse.CookiesEnabled();
+        if (!Page.IsPostBack) {
+            pnlError.Attributes.Add("style", "display:none");
+            // set focus on username
+            txtUsername.Focus();
+            // hitting enter key will cause form submission
+            //loginForm.Attributes.Add("onkeydown", SCRIPT_ENTER + btnSubmit.UniqueID + SCRIPT_CLICK_BUTTON);
+
+            // hitting enter in text boxes will cause form submission
+            ClickOnEnter(btnSubmit.ClientID, txtUsername);
+            ClickOnEnter(btnSubmit.ClientID, txtPassword);
+            btnSubmit.Attributes.Add("onclick", "this.disabled = true;");
+            
+            btnOkError.OnClientClick = "HideErrorPopup('" + txtPassword.ClientID + "'); return false;";           
+        }
+
+    }
+
+    protected void loginProcess() {
+        string dir;
+
+        string username = txtUsername.Text;
+        string password = txtPassword.Text;
+        string userid = "";
+        try {
+            loginCount = int.Parse(hidden1.Value);
+        } catch (Exception) {
+            loginCount = 0;
+        }
+        
+
+        username = MyUtilities.clean(username);
+
+        
+        //}
+        LogFiles logFiles = new LogFiles(username);
+        logFiles.LoginLog("login process start", DateTime.Now);
+        try {
+            // checks if the user is in the users database and throws exception if not
+            RecognizeUser(username, password);
+            logFiles.LoginLog("login process after username-pswd recognition", DateTime.Now);
+            // sets the user cookieid in the database and the lastUpdate field with current time
+            if (IsSomeoneLoggedIn(username)) {
+                logFiles.DuplicateLoginLog();
+                lblError.Text = "";
+                loginCount = 0;
+                hidden1.Value = loginCount + "";
+                lblErrorModal.Text = ERROR_DUPLICATE_LOGIN;
+                SetFocusOnOkError();
+                logFiles.LoginLog("login process - after set focus on ok button in error message", DateTime.Now);
+                modalError.Show();
+                logFiles.LoginLog("login process - after showing error pop up", DateTime.Now);
+            } else {
+                int sessionId = System.Diagnostics.Process.GetCurrentProcess().SessionId;
+                string cookieid = MyUtilities.clean(DateTime.Now.ToString() + sessionId);
+                cookieid = MyUtilities.clean(cookieid, ' '); // remove spaces
+                // encode cookie
+                cookieid = PasswordHash.PasswordHash.CreateHash(cookieid);
+                cookieid = MyUtilities.clean(cookieid);
+                //if (cookiesEnabled) {
+                
+                lblError.Text = "";
+
+                HttpCookie cookie = new HttpCookie(DbUse.LOGIN_COOKIE);
+                cookie.Value = cookieid;
+                cookie.Expires = DateTime.Now.AddDays(1);
+                Response.Cookies.Add(cookie);
+                logFiles.LoginLog("login process - cookie starts saving on user machine", DateTime.Now);
+
+                
+                // workaround - redirect again to login page, but in init of the page (session valid this time), the user gets redirected to the 
+                // last page visited in the current model
+                if (WaitForTrialCookie(cookieid, 1, 1000)) {
+                    logFiles.LoginLog("login process - cookie saved", DateTime.Now);
+                    SetUserCookieId(username, cookieid);
+                    logFiles.LoginLog();
+                    try {
+                        string lastNewLoginTime = GetMysqlDatabaseField("newLogin", cookieid);
+                        WriteLoginTimesToDb(DateTime.Now, lastNewLoginTime, cookieid);
+                        DeleteGraphs(); // delete all the graphs from last session
+                    } catch (Exception excep) {
+                        logFiles.ErrorLog(excep);
+                    }
+
+                    Response.Redirect(PAGENAME, true);
+                    
+                } else {
+                    logFiles.LoginLog("login process - cookie not saved", DateTime.Now);
+
+                    loginCount = 0;
+                    hidden1.Value = loginCount + "";
+
+                    lblErrorModal.Text = ERROR_COOKIES;
+                    SetFocusOnOkError();
+                    modalError.Show();
+                }
+            }
+        } catch (Exception ex) {
+            string error;
+
+            loginCount++;
+            hidden1.Value = loginCount + "";
+
+            if (loginCount >= MAX_TRIES) {
+                error = "LOCKUP - Too many unsuccessful tries!!!";
+                txtUsername.Text = "";
+                txtUsername.ReadOnly = true;
+                txtPassword.ReadOnly = true;
+                btnSubmit.Enabled = false;
+
+            } else {
+                error = ex.Message;
+                txtPassword.Focus();
+            }
+            lblError.Text = error;
+            lblError.Visible = true;
+        }
+    }
+
+    protected void SetFocusOnOkError() {
+        string script = "<SCRIPT language='javascript' type='text/javascript'>function fnFocus() { eval(\"document.getElementById('" + btnOkError.ClientID + "').focus()\") } setTimeout(\"fnFocus()\",200);</SCRIPT>";
+        Page.ClientScript.RegisterStartupScript(this.GetType(), "print_script", script);
+    }
+
+
+    protected override void OnInit(EventArgs e) {
+        base.OnInit(e);
+    }
+
+    protected void RecognizeUser(string username, string psswd) {
+        string sqlString = "SELECT id, usercode FROM userlog WHERE username = '" + username + "';";
+
+        conn = new ADODB.Connection();
+        rec = new ADODB.Recordset();
+        bool openedCon = DbUse.OpenAdoMysql(conn);
+        bool openedRec = DbUse.OpenAdoRec(conn, rec, sqlString);
+
+        if (!openedCon || !openedRec) {
+            throw new Exception("An error has occured. Try logging in again.");
+        } else if (rec.EOF) {
+            throw new Exception("Invalid username or password.");
+        } else {
+            string correctHash = rec.Fields["usercode"].Value.ToString();
+            if (!PasswordHash.PasswordHash.ValidatePassword(psswd, correctHash)) {
+                throw new Exception("Invalid username or password.");
+            }
+        }
+
+        DbUse.CloseAdoRec(rec);
+        DbUse.CloseAdo(conn);
+    }
+
+    protected void SetUserCookieId(string username, string cookieid) {
+        DbUse.RunMysql("UPDATE userlist SET userlist.userid = '" + cookieid + "' WHERE (((userlist.username)= '" + username + "' ));");
+
+        LastPostbackDbUpdate(cookieid, DateTime.Now.Ticks);
+    }
+
+    protected bool IsSomeoneLoggedIn(string username) {
+        bool someoneIn = false;
+        bool adoOpened = DbUse.OpenAdoMysql(conn);
+        string commandString = "SELECT * FROM userlist WHERE username = '" + username + "';";
+        bool adoRecOpened = DbUse.OpenAdoRec(conn, rec, commandString);
+        //if (!rec.EOF) {
+        try {
+            string cookieid = rec.Fields["userid"].Value.ToString();
+            HttpCookie cookie = Request.Cookies[DbUse.LOGIN_COOKIE];
+            if (!cookieid.Equals(DbUse.LOGOUT_USERID) && (cookie == null || !cookieid.Equals(cookie.Value.ToString()))) {
+                long lastUpdate = long.Parse(rec.Fields["lastUpdate"].Value.ToString());
+                long currentTime = DateTime.Now.Ticks;
+                if (currentTime - lastUpdate < NANOSEC_100_IN_MINUTE * TIMEOUT_IN_MINUTES) {
+                    someoneIn = true;
+                }
+            }
+        } catch (Exception) { }
+        return someoneIn;
+    }
+
+    public void ClickOnEnter(string btnClientId, TextBox outerControl) {
+        string script = "doFocus('" + btnClientId + "',event)";
+        outerControl.Attributes.Add("onkeydown", script);
+    }
+
+    protected void btnSubmit_Click(object sender, EventArgs e) {
+        loginProcess();
+    }
+
+    private bool WaitForTrialCookie(string cookieid, int maxTries, int milliseconds) {
+        bool cookieFound = false;
+        int count = 0;
+        while (true) {
+            count++;
+            HttpCookie trialCookie = Request.Cookies[TRIAL_COOKIE];
+            if (trialCookie != null) {
+                cookieFound = true;
+                break;
+            } else if (count >= maxTries) {
+                break;
+            }
+            System.Threading.Thread.Sleep(milliseconds);
+        }
+        return cookieFound;
+        
+    }
+}

@@ -1,0 +1,1205 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.OleDb;
+using System.Drawing;
+using System.Drawing.Imaging;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Web;
+
+
+namespace FlexAPInamespace {
+    /// <summary>
+    /// Summary description for FlexAPI
+    /// </summary>
+    public class FlexAPI {
+        ADODB.Connection conn = new ADODB.Connection();
+        ADODB.Recordset rec = new ADODB.Recordset();
+
+        private string currentModel = "";
+        private string userDir = "";
+        private string logoutMessage = "";
+        private string username = "";
+        private bool sessionValid = false;
+
+        //private static string flexDirectory = "MPXdiagrams-debug";
+        public static string flexDirectory = "VMdiagrams-debug";
+
+        private const string DIAGRAMS_DIR = "Diagrams";
+        private const string USER_IMAGES_DIR = "FlashIcons";
+
+        private CalcClass calc;
+
+        /************** types of nodes/tables ********/
+        public const int LABORTYPE = 5;
+        public const int EQUIPTYPE = 6;
+        public const int OPERTYPE = 7;
+        public const int ROUTETYPE = 8;
+        public const int PRODTYPE = 9;
+        public const int GENERALTYPE = 10;
+        public const int ALLPARTSTYPE = 11;
+        public const int IBOMTYPE = 16;
+        public const int ALLIBOMTYPE = 17;
+        public const int RESULT_LABORTYPE = 12;
+        public const int RESULT_EQUIPTYPE = 13;
+        public const int RESULT_PRODTYPE = 14;
+        public const int RESULT_OPERTYPE = 15;
+
+        public const int USERTYPE = 21;
+        /*****************************************/
+
+        /********** types of diagram*************/
+        public const int SHOPFLOOR = 0;
+        public const int SHOP_ROUTING = 1;
+        public const int PARTROUTING = 2;
+        /*******************************/
+
+
+
+        public const char LINE_SPLIT = '\n';
+        public const char FIELD_SPLIT = '#';
+
+        private TableSyncFlex tableSync;
+
+        public FlexAPI() {
+            PullMPXdata();
+        }
+
+        // returns time left in minutes
+        public long PullMPXdata() {
+
+            write_mess("at pull mpx data ");
+
+            long timeLeft = 0;
+            HttpCookie cookie = System.Web.HttpContext.Current.Request.Cookies[DbUse.LOGIN_COOKIE];
+            if (cookie != null && !cookie.Value.Equals(DbUse.DEFAULT_COOKIE_ID)) {
+                string cookieid = MyUtilities.clean(cookie.Value);
+                bool adoOpened = DbUse.OpenAdoMysql(conn);
+                string commandString = "SELECT * FROM userlist WHERE userid = '" + cookieid + "';";
+                bool adoRecOpened = DbUse.OpenAdoRec(conn, rec, commandString);
+
+                //if (!rec.EOF) {
+                try {
+                    long lastUpdate = long.Parse(rec.Fields["lastUpdate"].Value.ToString());
+                    long currentTime = DateTime.Now.Ticks;
+                    if (currentTime - lastUpdate < DbPage.NANOSEC_100_IN_MINUTE * DbPage.TIMEOUT_IN_MINUTES) {
+                        userDir = rec.Fields["usersub"].Value.ToString();
+                        tableSync = new TableSyncFlex(userDir);
+                        username = rec.Fields["username"].Value.ToString();
+                        currentModel = rec.Fields["currentModel"].Value.ToString();
+                        DbUse.CloseAdo(conn);
+                        DbUse.CloseAdoRec(rec);
+                        sessionValid = true;
+                        timeLeft = DbPage.NANOSEC_100_IN_MINUTE * DbPage.TIMEOUT_IN_MINUTES - (currentTime - lastUpdate);
+                        timeLeft = timeLeft / DbPage.NANOSEC_100_IN_MINUTE;
+
+                    } else {
+                        DbUse.CloseAdo(conn);
+                        DbUse.CloseAdoRec(rec);
+                        logoutMessage = "User session timeout.";
+                        WriteLogoutMessageToDb();
+                    }
+                } catch (Exception) {
+                    try {
+                        DbUse.CloseAdo(conn);
+                        DbUse.CloseAdoRec(rec);
+                    } catch (Exception) { }
+                }
+
+
+            }
+            return timeLeft;
+
+        }
+
+        public bool IsSessionValid() {
+
+            write_mess("at is session valid ");
+            bool isValid = false;
+            HttpCookie cookie = System.Web.HttpContext.Current.Request.Cookies[DbUse.LOGIN_COOKIE];
+            if (cookie != null && !cookie.Value.Equals(DbUse.DEFAULT_COOKIE_ID)) {
+                string cookieid = MyUtilities.clean(cookie.Value);
+                bool adoOpened = DbUse.OpenAdoMysql(conn);
+                string commandString = "SELECT * FROM userlist WHERE userid = '" + cookieid + "';";
+                bool adoRecOpened = DbUse.OpenAdoRec(conn, rec, commandString);
+
+                //if (!rec.EOF) {
+                try {
+                    long lastUpdate = long.Parse(rec.Fields["lastUpdate"].Value.ToString());
+                    long currentTime = DateTime.Now.Ticks;
+                    if (currentTime - lastUpdate < DbPage.NANOSEC_100_IN_MINUTE * DbPage.TIMEOUT_IN_MINUTES) {
+                        DbUse.CloseAdo(conn);
+                        DbUse.CloseAdoRec(rec);
+                        DbUse.LastPostbackDbUpdate(cookieid, currentTime); // update the time of the last cookieid check (last postback)
+                        isValid = true;
+                    } else {
+                        DbUse.CloseAdo(conn);
+                        DbUse.CloseAdoRec(rec);
+                        logoutMessage = "User session timeout.";
+                        DbUse.WriteLogoutMessageToDb(logoutMessage);
+                    }
+                } catch (Exception) {
+                    try {
+                        DbUse.CloseAdo(conn);
+                        DbUse.CloseAdoRec(rec);
+                    } catch (Exception) { }
+                }
+
+
+            }
+            return isValid;
+
+        }
+
+        public bool IsSessionValidNoUpdate() {
+            bool isValid = false;
+            HttpCookie cookie = System.Web.HttpContext.Current.Request.Cookies[DbUse.LOGIN_COOKIE];
+            if (cookie != null && !cookie.Value.Equals(DbUse.DEFAULT_COOKIE_ID)) {
+                string cookieid = MyUtilities.clean(cookie.Value);
+                bool adoOpened = DbUse.OpenAdoMysql(conn);
+                string commandString = "SELECT * FROM userlist WHERE userid = '" + cookieid + "';";
+                bool adoRecOpened = DbUse.OpenAdoRec(conn, rec, commandString);
+
+                //if (!rec.EOF) {
+                try {
+                    long lastUpdate = long.Parse(rec.Fields["lastUpdate"].Value.ToString());
+                    long currentTime = DateTime.Now.Ticks;
+                    if (currentTime - lastUpdate < DbPage.NANOSEC_100_IN_MINUTE * DbPage.TIMEOUT_IN_MINUTES) {
+                        DbUse.CloseAdo(conn);
+                        DbUse.CloseAdoRec(rec);
+                        isValid = true;
+                    } else {
+                        DbUse.CloseAdo(conn);
+                        DbUse.CloseAdoRec(rec);
+                        logoutMessage = "User session timeout.";
+                        DbUse.WriteLogoutMessageToDb(logoutMessage);
+                    }
+                } catch (Exception) {
+                    try {
+                        DbUse.CloseAdo(conn);
+                        DbUse.CloseAdoRec(rec);
+                    } catch (Exception) { }
+                }
+
+
+            }
+            return isValid;
+        }
+
+        public DiagramData GetDiagramData() {
+            DiagramData data = null;
+            int prodId = 0;
+            if (!sessionValid) {
+                throw new Exception("Session is not valid. Cannot load data.");
+            }
+            try {
+                int type = int.Parse(GetDatabaseField("currentDiag", "zstblstate"));
+                int whatifId = int.Parse(GetDatabaseField("WID", "zstblstate"));
+                if (type != SHOPFLOOR) {
+                    prodId = int.Parse(GetDatabaseField("currentProdId", "zstblstate"));
+                }
+                string prodName = null;
+                if (prodId != 0) {
+                    prodName = GetDatabaseField("ProdDesc", "ProdID", prodId, "tblprodfore");
+                }
+                data = new DiagramData(type, prodId, prodName, whatifId, null);
+                if (data.whatifId != 0) {
+                    data.whatifName = GetDatabaseField("Name", "WID", data.whatifId, "tblWhatif");
+                }
+                if (type == SHOP_ROUTING || type == SHOPFLOOR) {
+                    prodId = 0;
+                }
+            } catch (Exception ex) {
+                LogFiles logFiles = new LogFiles(username);
+                logFiles.ErrorLog(ex);
+
+                throw new Exception("Cannot load graph. Error in data parsing.");
+            }
+            try {
+                string graphML = null;
+                try {
+                    graphML = GetDatabaseField("pictascii", "prodid", prodId, "seqno", data.whatifId, "tblpictures");
+                } catch (Exception) {
+                    graphML = GetDatabaseField("pictascii", "prodid", prodId, "seqno", 0, "tblpictures");
+                }
+                data.graphML = graphML;
+            } catch (Exception) { }
+            return data;
+        }
+
+        protected string GetDatabaseField(string field, string key, string keyValue, string table) {
+            return tableSync.GetDatabaseField(field, key, keyValue, table);
+        }
+
+        protected string GetDatabaseField(string field, string key, int keyValue, string table) {
+            return tableSync.GetDatabaseField(field, key, keyValue, table);
+        }
+
+        protected string GetDatabaseField(string field, string table) {
+            return tableSync.GetDatabaseField(field, table);
+        }
+
+        protected string GetDatabaseField(string field, string key1, int keyValue1, string key2, int keyValue2, string table) {
+            return tableSync.GetDatabaseField(field, key1, keyValue1, key2, keyValue2, table);
+        }
+
+        public MPXresultsTables LoadResultsTables(int whatifId) {
+            MPXresultsTables resTables = new MPXresultsTables();
+
+            try {
+                resTables.laborResTable = LoadTable(RESULT_LABORTYPE, whatifId).table;
+            } catch (Exception) { }
+            try {
+                resTables.equipResTable = LoadTable(RESULT_EQUIPTYPE, whatifId).table;
+            } catch (Exception) { }
+            try {
+                resTables.prodResTable = LoadTable(RESULT_PRODTYPE, whatifId).table;
+            } catch (Exception) { }
+            try {
+                resTables.operResTable = LoadTable(RESULT_OPERTYPE, whatifId).table;
+            } catch (Exception) { }
+            return resTables;
+        }
+
+        
+
+        public MPXtable LoadTable(int type, int whatifId) {
+            try {
+                int prodID = -1;
+                DataTable table = new DataTable();
+                OleDbConnection connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetFullUserDirectory() + DbPage.MAIN_USER_DATABASE + ";");
+                string comm = "";
+                OleDbCommand cmd = null;
+                OleDbDataAdapter adapter = null;
+
+
+                switch (type) {
+                    case LABORTYPE:
+                        comm = "SELECT LaborID, LaborDesc, LaborDept, GrpSiz, OT, Abst FROM tbllabor;";
+                        break;
+                    case EQUIPTYPE:
+                        comm = "SELECT EquipID, EquipDesc, EquipDept, GrpSiz, OT, MTF, MTR, LaborDesc, Labor FROM tblEquip;";
+                        break;
+                    case OPERTYPE:
+                        try {
+                            prodID = int.Parse(GetDatabaseField("currentProdId", "zstblstate"));
+                        } catch (Exception) {
+                            throw new Exception("Error in parsing product data.");
+                        }
+                        comm = "SELECT OpID, OpNam, OpNum, PercentAssign, EqSetupTime, EqRuntime, LabSetupTime, LabRunTime, EquipDesc, EqID, ProdDesc, ProdFore from tbloper WHERE ProdFore = " + prodID + ";";
+                        break;
+                    case ROUTETYPE:
+                        try {
+                            prodID = int.Parse(GetDatabaseField("currentProdId", "zstblstate"));
+                        } catch (Exception) {
+                            throw new Exception("Error in parsing product data.");
+                        }
+                        comm = "SELECT RecID, OpNumF, OpNumT, FromOpName, ToOpName, Per, ProdDesc, PartFore from tblOperFrTo WHERE PartFore = " + prodID + ";";
+                        break;
+                    case GENERALTYPE:
+                        comm = "SELECT GeneralID, TUFor, TULT, TuProd, rtu1b, rtu1c from tblGeneral;";
+                        break;
+                    case PRODTYPE:
+                        try {
+                            prodID = int.Parse(GetDatabaseField("currentProdId", "zstblstate"));
+                        } catch (Exception) {
+                            throw new Exception("Error in parsing product data.");
+                        }
+                        comm = "SELECT ProdID, ProdDesc, ProdDept, EndDemd, Lotsiz from tblProdfore WHERE ProdID = " + prodID + ";";
+
+                        break;
+                    case ALLPARTSTYPE:
+                        comm = "SELECT ProdID, ProdDesc, ProdDept, EndDemd, Lotsiz from tblProdfore;";
+                        break;
+                    case IBOMTYPE:
+                        try {
+                            prodID = int.Parse(GetDatabaseField("currentProdId", "zstblstate"));
+                        } catch (Exception) {
+                            throw new Exception("Error in parsing product data.");
+                        }
+                        comm = "SELECT IbomID, CompName, CompID, UPA, ParentName, ParentID from tblIbom WHERE ParentID = " + prodID + ";";
+                        break;
+                    case ALLIBOMTYPE:
+                        comm = "SELECT IbomID, CompName, CompID, UPA, ParentName, ParentID from tblIbom;";
+                        break;
+                    case RESULT_LABORTYPE:
+                        comm = "SELECT LaborID, SetupUtil, RunUtil, AbsUtil, QProcess, QWait FROM tblRsLabor WHERE WID = " + whatifId + ";";
+                        break;
+                    case RESULT_EQUIPTYPE:
+                        comm = "SELECT EquipID, LabWaitUtil, RepUtil, RunUtil, SetupUtil, QProcess, QWait, QTotal FROM tblRsEquip WHERE WID = " + whatifId + ";";
+                        break;
+                    case RESULT_OPERTYPE:
+                        try {
+                            prodID = int.Parse(GetDatabaseField("currentProdId", "zstblstate"));
+                            comm = "SELECT OpID, FlowTime, WIP FROM tblRsOper WHERE WID = " + whatifId + " AND ProdID = " + prodID + ";";
+                        } catch (Exception) {
+                            comm = "SELECT OpID, FlowTime, WIP FROM tblRsOper WHERE WID = " + whatifId + ";";
+                        }
+                        break;
+                    case RESULT_PRODTYPE:
+                        comm = "SELECT ProdID, TotalGoodProd, ShippedProd, ScrapInAsm, Scrap, GoodForAsmProd, LTEquip, LTLabor, LTSetup, LTRun, LTWaitLot, LTWaitAsm, WIP FROM tblRsProd WHERE WID = " + whatifId + ";";
+                        break;
+                    default:
+                        break;
+                }
+                cmd = new OleDbCommand(comm, connec);
+                adapter = new OleDbDataAdapter(cmd);
+                try {
+                    connec.Open();
+                    adapter.Fill(table);
+                    connec.Close();
+                    IsSessionValid();
+                } catch (Exception ex) {
+                    LogFiles logFiles = new LogFiles(username);
+                    logFiles.ErrorLog(ex);
+                    try {
+                        connec.Close();
+                    } catch (Exception) { }
+                } finally {
+                    connec.Dispose();
+                }
+                return new MPXtable(type, table);
+            } catch (Exception ex) {
+                LogFiles logFiles = new LogFiles(username);
+                logFiles.ErrorLog(ex);
+                throw ex;
+            }
+        }
+
+        public MPXtable LoadTable(int type) {
+            return LoadTable(type, 0);
+        }
+
+        public void SaveMLgraph(string mlGraph, int prodId, int whatifId) {
+            string command;
+            try {
+                string graph = GetDatabaseField("pictascii", "ProdID", prodId, "seqno", whatifId, "tblpictures");
+                command = "UPDATE tblpictures SET pictascii = '" + mlGraph + "' WHERE ProdID = " + prodId + " AND seqno = " + whatifId + ";";
+            } catch (Exception ex) {
+                if (ex.Message.IndexOf("not found") >= 0) {
+                    command = "INSERT INTO tblpictures (pictascii, prodid, seqno) VALUES ('" + mlGraph + "', " + prodId + ", " + whatifId + ");";
+                } else {
+                    throw new Exception("Could not save the diagram. Please try again.");
+                }
+            }
+
+            if (!RunSql(command)) {
+                throw new Exception("Could not save the diagram. Please try again.");
+            }
+        }
+
+        public void SaveMLgraph(string mlGraph, int prodId) {
+            SaveMLgraph(mlGraph, prodId, 0);
+
+        }
+
+        public string LoadMLgraph(int productId) {
+            return LoadMLgraph(productId, 0);
+        }
+
+        public string LoadMLgraph(int productId, int whatifId) {
+            string mlGraph = "";
+            try {
+                try {
+                    mlGraph = GetDatabaseField("pictascii", "ProdID", productId, "seqno", whatifId, "tblpictures");
+                } catch (Exception) {
+                    mlGraph = GetDatabaseField("pictascii", "ProdID", productId, "seqno", 0, "tblpictures");
+                }
+            } catch (Exception) {
+                throw new Exception("An error has occured. Cannot load the graph.");
+            }
+            return mlGraph;
+        }
+
+        protected void LastPostbackDbUpdate(string cookieid, long updateTime) {
+            DbUse.LastPostbackDbUpdate(cookieid, updateTime);
+
+        }
+
+        private void WriteLogoutMessageToDb() {
+            if (logoutMessage != null & !logoutMessage.Equals(String.Empty)) {
+                DbUse.WriteLogoutMessageToDb(logoutMessage);
+
+            }
+        }
+
+        private static string GetDirectory() {
+            string dir = GetMainDirectory() + "App_Data\\";
+            return dir;
+        }
+
+        private static string GetMainDirectory() {
+            string helperPage = DbUse.LOGOUT_PAGE;
+            string dir = HttpContext.Current.Request.MapPath(helperPage);
+            dir = dir.Substring(0, dir.IndexOf(flexDirectory));
+            return dir;
+        }
+
+        private string GetFullUserDirectory() {
+            return GetDirectory() + userDir;
+        }
+
+        private string GetDiagramsDirectory() {
+            return GetFullUserDirectory() + DIAGRAMS_DIR + "\\";
+        }
+
+        private bool RunSql(string commandString) {
+            if (calc == null) {
+                calc = new CalcClass(GetFullUserDirectory() + "mpxmdb.mdb");
+            }
+            return calc.runsql(commandString);
+        }
+
+        public MPXidTables SaveMPXtables(int[] tableTypes, string[] tableStrings, int diagType) {
+            try {
+                if (!IsSessionValid()) {
+                    throw new Exception("Cannot save diagram. Session not valid.");
+                }
+                bool saved = true;
+                string tableName = "";
+                for (int i = 0; i < tableTypes.Length; i++) {
+                    tableName = "";
+                    switch (tableTypes[i]) {
+                        case LABORTYPE:
+                            tableName = "pictbllabor";
+                            break;
+                        case EQUIPTYPE:
+                            tableName = "pictblequip";
+                            break;
+                        case OPERTYPE:
+                            tableName = "pictbloper";
+                            break;
+                        case ROUTETYPE:
+                            tableName = "pictbloperfrto";
+                            break;
+                        case GENERALTYPE:
+                            tableName = "pictblgeneral";
+                            break;
+                        case PRODTYPE:
+                            tableName = "pictblprodfore";
+                            break;
+                        case ALLPARTSTYPE:
+                            tableName = "pictblprodfore";
+                            break;
+                        case IBOMTYPE:
+                            tableName = "pictblibom";
+                            break;
+                        default:
+                            continue;
+                    }
+                    
+                    saved = RunSql("DELETE * FROM " + tableName + ";");
+                    if (!saved) {
+                        string origTableName = tableName.Substring(3);
+                        RunSql("SELECT " + origTableName + ".*" + " INTO " + tableName + " FROM " + origTableName + ";");
+                        RunSql("ALTER TABLE " + tableName + " ADD COLUMN PicID LONG;");
+                        saved = RunSql("DELETE * FROM " + tableName + ";");
+                    }
+                    if (tableStrings[i] != null) {
+                        string[] lines = tableStrings[i].Split(LINE_SPLIT);
+                        string[] columns = lines[0].Split(FIELD_SPLIT);
+                        string[] numeric = lines[1].Split(FIELD_SPLIT);
+                        for (int j = 2; j < lines.Length; j++) {
+                            string[] values = lines[j].Split(FIELD_SPLIT);
+                            if (!RunSql(getInsertCommand(columns, numeric, values, tableName))) {
+                                saved = false;
+                            }
+                        }
+                    }
+                }
+                MPXidTables ids = new MPXidTables();
+                if (diagType == SHOPFLOOR) {
+                    ids.prodIds = synchronizeAllProductsTable();
+                }
+                if (diagType == SHOPFLOOR || diagType == SHOP_ROUTING) {
+                    ids.laborIds = synchronizeLaborTables();
+                    ids.equipIds = synchronizeEquipTables();
+                }
+                if (diagType == SHOP_ROUTING || diagType == PARTROUTING) {
+                    ids.operIds = synchronizeOperTables();
+                    ids.routeIds = synchronizeRoutingTables();
+                    ids.ibomIds = synchronizeIbomTables();
+                    synchronizeProductTable();
+                }
+                synchronizeGeneralTable();
+
+
+                return ids;
+            } catch (Exception ex) {
+                LogFiles logFiles = new LogFiles(username);
+                logFiles.ErrorLog(ex);
+                throw ex;
+            }
+        }
+
+        private string getInsertCommand(string[] fields, string[] numeric, string[] values, string tableName) {
+            string command = "INSERT INTO " + tableName;
+            string fieldEnum = "(";
+            string valueEnum = "(";
+            bool isNumeric = false;
+            for (int i = 0; i < fields.Length && i < values.Length; i++) {
+                fieldEnum += fields[i];
+                string value = values[i];
+                try {
+                    isNumeric = (int.Parse(numeric[i]) != 0); // the value is numeric
+                } catch (Exception) { }
+                if (!isNumeric) {
+                    value = "'" + value + "'"; // the value is a string
+                }
+
+                valueEnum += value;
+                if (i != fields.Length - 1) {
+                    fieldEnum += ", ";
+                    valueEnum += ", ";
+                } else {
+                    fieldEnum += ")";
+                    valueEnum += ")";
+                }
+                isNumeric = false;
+            }
+
+            command = "INSERT INTO [" + tableName + "] " + fieldEnum + " VALUES " + valueEnum + ";";
+            return command;
+        }
+
+        public DataTable synchronizeEquipTables() {
+
+            write_mess("at sync equip tables ");
+
+            DataTable table = new DataTable();
+            RunSql("UPDATE tblEquip SET tblEquip.Flag = 0;");
+            RunSql("UPDATE pictblEquip INNER JOIN tblEquip ON pictblEquip.PicID = tblEquip.EquipID SET tblEquip.Flag = 1, tblEquip.EquipDesc = [pictblEquip].[EquipDesc], tblEquip.EquipDept = [pictblEquip].[EquipDept], tblEquip.LaborDesc = [pictblEquip].[LaborDesc], tblEquip.GrpSiz = [pictblEquip].[GrpSiz], tblEquip.Labor = [pictblEquip].[Labor], tblEquip.OT = [pictblEquip].[OT], tblEquip.MTF = [pictblEquip].[MTF], tblEquip.MTR = [pictblEquip].[MTR];");
+            RunSql("UPDATE tblEquip SET tblEquip.Flag = 1  WHERE (((tblEquip.EquipDesc)='NONE'));");
+            RunSql("DELETE tblEquip.Flag, tblEquip.* FROM tblEquip WHERE (((tblEquip.Flag)=0));");
+            RunSql("UPDATE tblEquip SET tblEquip.Flag = 0;");
+            RunSql("INSERT INTO tblEquip ( EquipDesc, EquipDept, GrpSiz, MTF, MTR, LaborDesc, Labor, OT, flag )  SELECT pictblEquip.[EquipDesc], pictblEquip.[EquipDept], pictblEquip.[GrpSiz], pictblEquip.[MTF], pictblEquip.[MTR], pictblEquip.[LaborDesc], pictblEquip.[Labor], pictblEquip.[OT], pictblEquip.[PicID]  FROM pictblEquip  WHERE (((pictblEquip.[PICID])<0));");
+            RunSql("UPDATE tblEquip SET EquipType = 0, EquipTypeName = 'Standard' WHERE GrpSiz > 0;");
+            RunSql("UPDATE tblEquip SET EquipType = 1, EquipTypeName = 'Delay' WHERE GrpSiz = -1;");
+            RunSql("UPDATE PICtblOper INNER JOIN tblEquip ON PICtblOper.EqID = tblEquip.Flag SET PICtblOper.EqID = [tblEquip].[EquipID];");
+            RunSql("DELETE * FROM picbackequip;");
+            RunSql("INSERT INTO picbackequip SELECT tblEquip.EquipID, tblEquip.Flag FROM tblEquip WHERE ((tblEquip.Flag)<>0);");
+            using (OleDbConnection connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetFullUserDirectory() + DbPage.MAIN_USER_DATABASE + ";")) {
+                string comm = "SELECT EquipID, Flag FROM picbackequip;";
+                OleDbCommand cmd = new OleDbCommand(comm, connec);
+                OleDbDataAdapter adapter = new OleDbDataAdapter(cmd);
+                try {
+                    adapter.Fill(table);
+                } catch (Exception) {
+                    try {
+                        connec.Close();
+                    } catch (Exception) { }
+                }
+            }
+            return table;
+        }
+
+        public DataTable synchronizeLaborTables() {
+            DataTable table = new DataTable();
+            RunSql("UPDATE tblLabor SET tblLabor.flag = 0;");
+            RunSql("UPDATE pictblLabor INNER JOIN tblLabor ON pictblLabor.PicID = tblLabor.LaborID SET tblLabor.LaborDesc = [pictblLabor].[LaborDesc], tblLabor.GrpSiz = [pictblLabor].[GrpSiz], tblLabor.Abst = [pictblLabor].[Abst], tblLabor.OT = [pictblLabor].[OT], tblLabor.LaborDept = [pictblLabor].[LaborDept], tblLabor.flag = 1;");
+            RunSql("UPDATE tblLabor SET tblLabor.flag = 1  WHERE (((tblLabor.LaborDesc)='NONE'));");
+            RunSql("DELETE tblLabor.flag, tblLabor.*  FROM tblLabor  WHERE (((tblLabor.flag)=0));");
+            RunSql("UPDATE tblLabor SET tblLabor.flag = 0;");
+            RunSql("INSERT INTO tblLabor ( LaborDesc, LaborDept, GrpSiz, Abst, OT, flag )  SELECT pictblLabor.LaborDesc, pictblLabor.LaborDept, pictblLabor.GrpSiz, pictblLabor.Abst, pictblLabor.OT, pictblLabor.PICid  FROM pictblLabor WHERE (((pictblLABOR.[PICID])<0));");
+            RunSql("UPDATE PICtblEquip INNER JOIN tblLabor ON PICtblEquip.Labor = tblLabor.flag SET PICtblEquip.LABOR = [tblLabor].[LaborID];");
+            RunSql("DELETE * FROM picbacklabor;");
+            RunSql("INSERT INTO PICBACKLABOR SELECT tblLabor.LaborID, tblLabor.flag FROM tblLabor WHERE ((tblLabor.flag)<>0);");
+            using (OleDbConnection connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetFullUserDirectory() + DbPage.MAIN_USER_DATABASE + ";")) {
+                string comm = "SELECT LaborID, Flag FROM picbacklabor";
+                OleDbCommand cmd = new OleDbCommand(comm, connec);
+                OleDbDataAdapter adapter = new OleDbDataAdapter(cmd);
+                try {
+                    adapter.Fill(table);
+                } catch (Exception) {
+                    try {
+                        connec.Close();
+                    } catch (Exception) { }
+                }
+            }
+            return table;
+        }
+
+        public void synchronizeGeneralTable() {
+            write_mess("at sync general table ");
+
+            RunSql("UPDATE PICtblGeneral, tblGeneral SET PICtblGeneral.GeneralID = [tblGeneral].[GeneralID];");
+            RunSql("UPDATE PICtblGeneral INNER JOIN tblGeneral ON PICtblGeneral.GeneralID = tblGeneral.GeneralID SET tblGeneral.TULT = [PICtblGeneral].[TULT], tblGeneral.TUProd = [PICtblGeneral].[TUProd], tblGeneral.TUFor = [PICtblGeneral].[TUFor], tblGeneral.RTU1b = [PICtblGeneral].[RTU1b], tblGeneral.RTU1c = [PICtblGeneral].[RTU1c];");
+
+        }
+
+        public void synchronizeProductTable() {
+            // the select query in sql.docx doesn't make sense...
+            RunSql("UPDATE tblProdFore INNER JOIN pictblprodfore ON tblProdFore.ProdID = pictblprodfore.PicID SET tblProdFore.ProdDept = [pictblprodfore].[proddept], tblProdFore.EndDemd = [pictblprodfore].[enddemd], tblProdFore.Lotsiz = [pictblprodfore].[lotsiz];");
+
+        }
+
+        public DataTable synchronizeAllProductsTable() {
+            ADODB.Recordset recprod = null;
+            int prid;
+            string str1;
+
+            ClassE classE = new ClassE(GetFullUserDirectory());
+            str1 = "UPDATE tblProdFore SET tblProdFore.Flag = 0;";
+            RunSql(str1);
+
+            str1 = "UPDATE tblProdFore INNER JOIN pictblprodfore ON tblProdFore.ProdID = pictblprodfore.picid SET tblProdFore.Flag = 1; ";
+            RunSql(str1);
+
+            //  Do delete on list below 
+            str1 = "SELECT tblProdFore.ProdID, tblProdFore.Flag  FROM tblProdFore  WHERE (((tblProdFore.Flag)=0));";
+            // Delete 
+            classE.Open();
+            DbUse.open_ado_rec(classE.globaldb, ref recprod, str1);
+
+            while (!recprod.EOF) {
+                prid = (int)recprod.Fields["prodid"].Value;
+                classE.del_pt_res(prid);  //  gwwd  check this name ? 
+                recprod.MoveNext();
+            }
+            DbUse.CloseAdoRec(recprod);
+            classE.runsqlado("DELETE * FROM tblprodfore WHERE Flag = 0");
+
+            //  update data 
+            str1 = "UPDATE tblProdFore INNER JOIN pictblprodfore ON tblProdFore.ProdID = pictblprodfore.PicID SET tblProdFore.ProdDesc = [pictblprodfore].[proddesc], tblProdFore.ProdDept = [pictblprodfore].[proddept], tblProdFore.EndDemd = [pictblprodfore].[EndDemd], tblProdFore.Lotsiz = [pictblprodfore].[Lotsiz]; ";
+            classE.runsqlado(str1);
+
+            //  Add new products :
+            str1 = "INSERT INTO tblProdFore ( ProdDesc, ProdDept, EndDemd, Lotsiz, Flag ) SELECT pictblprodfore.ProdDesc, pictblprodfore.ProdDept, pictblprodfore.EndDemd, pictblprodfore.Lotsiz, pictblprodfore.PicID FROM pictblprodfore WHERE ((pictblprodfore.PicID) < 0);";
+            classE.runsqlado(str1);
+
+            str1 = "SELECT tblProdFore.ProdID, tblProdFore.Flag FROM tblProdFore WHERE  ((tblProdFore.Flag)<0);";
+            // add dock, stock etc…
+            DbUse.open_ado_rec(classE.globaldb, ref recprod, str1);
+
+            while (!recprod.EOF) {
+                prid = (int)recprod.Fields["prodid"].Value;
+                classE.addoper_1(prid); //  gwwd  check this name   IS GOOD 
+                recprod.MoveNext();
+            }
+            DbUse.CloseAdoRec(recprod);
+            classE.Close();
+
+            tableSync.SyncTables();
+            tableSync.UpdateOperNames();
+            tableSync.UpdateEquipNames();
+
+            //  now return list into table     to_diagram
+            str1 = "DELETE picbackprodfore.*  FROM picbackprodfore;";
+            if (!RunSql(str1)) {
+                str1 = "SELECT ProdID, Flag INTO picbackprodfore FROM tblprodfore WHERE (((tblProdFore.Flag)<0));";
+            } else {
+                str1 = "INSERT INTO picbackprodfore (ProdID, Flag)  SELECT tblProdFore.ProdID, tblProdFore.Flag FROM tblProdFore WHERE (((tblProdFore.Flag)<0)); ";
+            }
+            RunSql(str1);
+
+            DataTable table = new DataTable();
+
+            using (OleDbConnection connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetFullUserDirectory() + DbPage.MAIN_USER_DATABASE + ";")) {
+                string comm = "SELECT ProdID, Flag FROM picbackprodfore;";
+                OleDbCommand cmd = new OleDbCommand(comm, connec);
+                OleDbDataAdapter adapter = new OleDbDataAdapter(cmd);
+                try {
+                    adapter.Fill(table);
+                    connec.Close();
+                } catch (Exception ex) {
+                    LogFiles logFiles = new LogFiles(username);
+                    logFiles.ErrorLog(ex);
+                    try {
+                        connec.Close();
+                    } catch (Exception) { }
+                }
+            }
+            return table;
+
+        }
+
+        public DataTable synchronizeOperTables() {
+            DataTable table = new DataTable();
+            RunSql("UPDATE tblOper SET tblOper.Flag = 1;");
+            RunSql("UPDATE tblOper INNER JOIN PICtblProdFore ON tblOper.ProdFore = PICtblProdFore.PicID SET tblOper.Flag = 0;");
+            RunSql("UPDATE PICtblOper INNER JOIN tblOper ON PICtblOper.PicID = tblOper.OpID SET tblOper.OpNam = [PICtblOper].[OpNam], tblOper.OpNum = [PICtblOper].[OpNum], tblOper.PercentAssign = [PICtblOper].[PercentAssign], tblOper.EqSetupTime = [PICtblOper].[EqSetupTime], tblOper.EqRunTime = [PICtblOper].[EqRunTime], tblOper.LabSetupTime = [PICtblOper].[LabSetupTime], tblOper.LabRunTime = [PICtblOper].[LabRunTime], tblOper.ProdDesc = [PICtblOper].[ProdDesc], tblOper.EquipDesc = [PICtblOper].[EquipDesc], tblOper.EqID = [PICtblOper].[EqID], tblOper.ProdFore = [PICtblOper].[ProdFore],  tblOPER.flag = 1;");
+            RunSql("UPDATE tblOper INNER JOIN PICtblProdFore ON tblOper.ProdFore = PICtblProdFore.PicID SET tblOper.Flag = 1  WHERE (((tblOper.OpNam)='DOCK')) OR (((tblOper.OpNam)='SCRAP')) OR (((tblOper.OpNam)='STOCK'));");
+            RunSql("DELETE tblOper.*  FROM tblOper INNER JOIN PICtblProdFore ON tblOper.ProdFore = PICtblProdFore.PicID  WHERE (((tblOper.Flag)=0));");
+            RunSql("UPDATE tblOper SET tblOper.Flag = 0;");
+            RunSql("INSERT INTO tblOper ( ProdFore, OpNam, OpNum, PercentAssign, EqSetupTime, EqRunTime, LabSetupTime, LabRunTime, ProdDesc, EquipDesc, EqID, Flag )  SELECT PICtblOper.ProdFore, PICtblOper.OpNam, PICtblOper.OpNum, PICtblOper.PercentAssign, PICtblOper.EqSetupTime, PICtblOper.EqRunTime, PICtblOper.LabSetupTime, PICtblOper.LabRunTime, PICtblOper.ProdDesc, PICtblOper.EquipDesc, PICtblOper.EqID, PICtblOper.PICid  FROM PICtblOper  WHERE (((pictbloper.[PICID])<0));");
+            RunSql("UPDATE PICtblOperFrTo INNER JOIN tblOper ON (PICtblOperFrTo.OpNumF = tblOper.Flag) AND (PICtblOperFrTo.PartFore = tblOper.ProdFore) SET PICtblOperFrTo.OpNumF = [tblOper].[OpID]  WHERE (((tblOper.Flag)<0));");
+            RunSql("UPDATE PICtblOperFrTo INNER JOIN tblOper ON (PICtblOperFrTo.OpNumT = tblOper.Flag) AND (PICtblOperFrTo.PartFore = tblOper.ProdFore) SET PICtblOperFrTo.OpNumT = [tblOper].[OpID]  WHERE (((tblOper.Flag)<0));");
+            RunSql("DELETE * FROM picbackoper;");
+            RunSql("INSERT INTO picbackoper SELECT tblOper.OpID, tblOper.Flag FROM tblOper  WHERE ((tblOper.Flag)<0);");
+            using (OleDbConnection connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetFullUserDirectory() + DbPage.MAIN_USER_DATABASE + ";")) {
+                string comm = "SELECT OpID, Flag FROM picbackoper;";
+                OleDbCommand cmd = new OleDbCommand(comm, connec);
+                OleDbDataAdapter adapter = new OleDbDataAdapter(cmd);
+                try {
+                    adapter.Fill(table);
+                    connec.Close();
+                } catch (Exception) {
+                    try {
+                        connec.Close();
+                    } catch (Exception) { }
+                }
+            }
+            return table;
+        }
+
+        public DataTable synchronizeRoutingTables() {
+            DataTable table = new DataTable();
+            RunSql("UPDATE tblOperfrto  SET  tblOperFrTo.Flag = 1;");  //  new line  gd !!  else delete erases other product routing lines ...
+            RunSql("UPDATE PICtblProdFore INNER JOIN tblOperFrTo ON PICtblProdFore.PicID = tblOperFrTo.PartFore SET  tblOperFrTo.Flag = 0;");
+            RunSql("UPDATE tblOperFrTo INNER JOIN PICtblOperFrTo ON tblOperFrTo.RecID = PICtblOperFrTo.PicID SET tblOperFrTo.OpNumF = [PICtblOperFrTo].[OpNumF], tblOperFrTo.OpNumT = [PICtblOperFrTo].[OpNumT], tblOperFrTo.Per = [PICtblOperFrTo].[Per],  tblOPERfrto.flag = 1;");
+            RunSql("DELETE tblOperFrTo.Flag, tblOperFrTo.* FROM tblOperFrTo WHERE (((tblOperFrTo.Flag)=0));");
+            RunSql("INSERT INTO tblOperFrTo ( PartFore, ProdDesc, OpNumF, OpNumT, fromopname, toopname, Per, Flag )  SELECT PICtblOperFrTo.PartFore, PICtblOperFrTo.ProdDesc, PICtblOperFrTo.OpNumF, PICtblOperFrTo.OpNumT, PICtblOperFrTo.fromopname, PICtblOperFrTo.toopname, PICtblOperFrTo.Per, PICtblOperFrTo.PICid  FROM PICtblOperFrTo WHERE (((PICtblOperFrTo.PICid)<0));");
+            // RunSql("SELECT tblOperFrTo.RecID, tblOperFrTo.Flag INTO picbackoperfrto  FROM tblOperFrTo  WHERE  ((tblOperFrTo.Flag)<0));");
+            RunSql("DELETE * from picbackoperfrto;");
+            RunSql("INSERT INTO picbackoperfrto (RecID, Flag) SELECT tblOperFrTo.RecID, tblOperFrTo.Flag FROM tblOperFrTo WHERE ((tblOperFrTo.Flag)<0);");
+            using (OleDbConnection connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetFullUserDirectory() + DbPage.MAIN_USER_DATABASE + ";")) {
+                string comm = "SELECT RecID, Flag FROM picbackoperfrto;";
+                OleDbCommand cmd = new OleDbCommand(comm, connec);
+                OleDbDataAdapter adapter = new OleDbDataAdapter(cmd);
+                try {
+                    adapter.Fill(table);
+                } catch (Exception) {
+                    try {
+                        connec.Close();
+                    } catch (Exception) { }
+                }
+            }
+            return table;
+        }
+
+        public DataTable synchronizeIbomTables() {
+            DataTable table = new DataTable();
+            RunSql("UPDATE tblIbom  SET  tblIbom.Flag = 1;");  //  new line  gd !!  else delete erases other product routing lines ...
+            RunSql("UPDATE PICtblProdfore INNER JOIN tblIbom ON PICtblProdFore.PicID = tblIbom.ParentID SET  tblIbom.Flag = 0;"); // mark components of the current product
+            //RunSql("UPDATE PICtblProdfore INNER JOIN tblIbom ON PICtblProdFore.PicID = tblIbom.CompID SET  tblIbom.Flag = 0;"); // probably should not be there - don't want to erase current product parents
+            RunSql("UPDATE tblIbom INNER JOIN PICtblIbom ON tblIbom.IbomID = PICtblIbom.PicID SET tblIbom.CompID = [PICtblIbom].[CompID], tblIbom.CompName = [PICtblIbom].[CompName], tblIbom.UPA = [PICtblIbom].[UPA],  tblIbom.flag = 1;");
+            RunSql("DELETE tblIbom.* FROM tblIbom WHERE (tblIbom.Flag=0);"); // delete components that did not come back from diagram
+            RunSql("INSERT INTO tblIbom ( CompID, CompName, UPA, ParentID, ParentName, Flag)  SELECT PICtblIbom.CompID, PICtblIbom.CompName, PICtblIbom.UPA, PICtblIbom.ParentID, PICtblIbom.ParentName, PICtblIbom.PICid  FROM PICtblIbom WHERE (((PICtblIbom.PICid)<0));");
+            if (!RunSql("SELECT tblIBOM.IbomID, tblIbom.Flag INTO picbackibom  FROM tblIbom  WHERE  ((tblIbom.Flag)<0);")) {
+                RunSql("DELETE * from picbackibom;");
+                RunSql("INSERT INTO picbackibom (IbomID, Flag) SELECT tblIbom.IbomID, tblIbom.Flag FROM tblIbom WHERE ((tblIbom.Flag)<0);");
+            }
+            
+            using (OleDbConnection connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetFullUserDirectory() + DbPage.MAIN_USER_DATABASE + ";")) {
+                string comm = "SELECT IbomID, Flag FROM picbackibom;";
+                OleDbCommand cmd = new OleDbCommand(comm, connec);
+                OleDbDataAdapter adapter = new OleDbDataAdapter(cmd);
+                try {
+                    adapter.Fill(table);
+                } catch (Exception) {
+                    try {
+                        connec.Close();
+                    } catch (Exception) { }
+                }
+            }
+            return table;
+        }
+
+        public void BackupDiagram(string mlGraph, int prodId, int whatifId) {
+            // unlike classic SaveMlgraph method it does not throw exception
+            if (IsSessionValid()) {
+                int negId = -prodId - 1;
+                try {
+                    SaveMLgraph(mlGraph, negId, whatifId);
+                } catch (Exception) { }
+            }
+
+        }
+
+        public void BackupDiagram(string mlGraph, int prodId) {
+            BackupDiagram(mlGraph, prodId, 0);
+        }
+
+        public string LoadBackupDiagram(int prodId, int whatifId) {
+            if (!IsSessionValid()) {
+                throw new Exception("Cannot load diagram backup. Session is not valid.");
+            }
+            int negId = -prodId - 1;
+            try {
+                return LoadMLgraph(negId, whatifId);
+            } catch (Exception) {
+                throw new Exception("Cannot load diagram backup. No diagram backup on the server.");
+            }
+        }
+
+        public string LoadBackupDiagram(int prodId) {
+            write_mess("at load backup diagram - prodid ");
+            return LoadBackupDiagram(prodId, 0);
+        }
+
+        public bool SaveDiagramSetup(int diagType, int prodId) {
+            write_mess("at save diagram setup - type, prodid ");
+            bool saved = false;
+            // set diagram type/product in the database
+            if (RunSql("UPDATE zstblstate SET currentDiag = " + diagType + ";")) {
+                if (prodId == -1 || RunSql("UPDATE zstblstate SET currentProdId = " + prodId + ";")) {
+                    saved = true;
+                } else {
+                    throw new Exception("An error has occured and the diagram cannot load. Please try again.");
+                }
+            } else {
+                throw new Exception("An error has occured and the diagram cannot load. Please try again.");
+            }
+            return saved;
+        }
+
+
+
+        public MPXtable SaveNewProduct(int diagType, string prodName) {
+            write_mess("at save new prod - type, prodname ");
+            int prodId;
+            MPXtable partsTable = null;
+            if (!RunSql("INSERT INTO tblprodfore (ProdDesc) VALUES ('" + prodName + "');")) {
+                throw new Exception("An error has occured while creating a new product. Please try again.");
+            } else {
+                partsTable = LoadTable(ALLPARTSTYPE);
+                ClassA classA = new ClassA(GetDirectory() + userDir);
+
+                try {
+                    prodId = int.Parse(GetDatabaseField("ProdID", "ProdDesc", prodName, "tblprodfore"));
+                    classA.addoper_1(prodId); // add dock, stock, scrap operations and default routing
+                    tableSync.SyncTables();
+                    tableSync.UpdateOperNames();
+                    tableSync.UpdateEquipNames();
+                } catch (Exception) {
+                    classA.Close();
+                    throw new Exception("An error has occured while parsing the new product. Please try again.");
+                }
+                classA.Close();
+                SaveDiagramSetup(diagType, prodId);
+            }
+            return partsTable;
+        }
+
+        public IDs CopyProduct(int origProdId, int diagramId, string copyName, bool copyDiagram) {
+            int idNew = -1;
+            try {
+                ClassA classA = new ClassA(GetDirectory() + userDir);
+                classA.setGlobalVar();
+                idNew = classA.CopyProdforeFromGUI(origProdId, copyName);
+                classA.Close();
+                // copy diagram and replace user tags
+                if (copyDiagram) {
+                    CopyDiagram(origProdId, idNew, copyName);
+                }
+
+            } catch (Exception ex) {
+                LogFiles logFiles = new LogFiles(username);
+                logFiles.ErrorLog(ex);
+            }
+            return new IDs(diagramId, idNew);
+        }
+
+
+        private void CopyDiagram(int origProdId, int copyProdId, string copyName) {
+            try {
+                string origDiagram = LoadMLgraph(origProdId);
+                string copiedDiagram = "";
+                // parse
+                string userTagXmlBegin = "<y:UserTag type=\"string\">";
+                string userTagXmlEnd = "</y:UserTag>";
+                
+                string cDataBegin = "<![CDATA[";
+
+                while (origDiagram.IndexOf(userTagXmlBegin) >= 0) {
+                    int index = origDiagram.IndexOf(userTagXmlBegin) + userTagXmlBegin.Length;
+                    copiedDiagram += origDiagram.Substring(0, index);
+                    origDiagram = origDiagram.Substring(index);
+
+                    string tag = origDiagram.Substring(0, origDiagram.IndexOf(userTagXmlEnd));
+                    bool xmlCdata = false;
+                    if (tag.IndexOf(cDataBegin) == 0) {
+                        xmlCdata = true;
+                        tag = tag.Substring(cDataBegin.Length);
+                    }
+                    string[] tagParts = tag.Split('@');
+                    string tagNoLevel = tag;
+                    string level = "";
+                    if (tagParts.Length > 1) {
+                        tagNoLevel = tagParts[1];
+                        level = tagParts[0];
+                    }
+                    string[] fields = tagNoLevel.Split('#');
+                    try {
+                        if (tagNoLevel.IndexOf("MPX-P") == 0) {
+                            if (fields[2].Equals(origProdId + "")) {
+                                fields[2] = copyProdId + "";
+                                fields[1] = copyName;
+                            }
+                        } else if (tagNoLevel.IndexOf("MPX-O") == 0) {
+                            int opIdOrig = int.Parse(fields[2]);
+                            int opIdNew = int.Parse(GetDatabaseField("OpID", "Flag", opIdOrig, "picbackoper"));
+                            fields[2] = opIdNew + "";
+                        } else if (tagNoLevel.IndexOf("MPX-R") == 0) {
+                            int routeIdOrig = int.Parse(fields[1]);
+                            int routeIdNew = int.Parse(GetDatabaseField("RecID", "Flag", routeIdOrig, "picbackoperfrto"));
+                            fields[1] = routeIdNew + "";
+                        }
+                        tag = ToTagString(fields, level);
+                        if (level.Equals("")) {
+                            tag = tag.Substring(1);
+                        }
+                        if (xmlCdata) {
+                            tag = cDataBegin + tag;
+                        }
+                    } catch (Exception ex) {
+                        LogFiles logFiles = new LogFiles(username);
+                        logFiles.ErrorLog(ex);
+                    }
+                    copiedDiagram += tag + userTagXmlEnd;
+                    origDiagram = origDiagram.Substring(origDiagram.IndexOf(userTagXmlEnd) + userTagXmlEnd.Length);
+                }
+                copiedDiagram += origDiagram;
+                SaveMLgraph(copiedDiagram, copyProdId);
+            } catch (Exception) { }
+
+        }
+
+        protected bool UpdateSql(string commandString) {
+            return tableSync.UpdateSql(commandString);
+        }
+
+
+        private string ToTagString(string[] tagFields, string level) {
+            string tag = "";
+            for (int i = 0; i < tagFields.Length - 1; i++) {
+                tag += tagFields[i] + "#";
+            }
+            tag += tagFields[tagFields.Length - 1];
+            tag = level + "@" + tag;
+            return tag;
+        }
+
+        public string GetUserImagesDirectory() {
+            //return GetMainDirectory() + "VMdiagrams-debug\\" + USER_IMAGES_DIR + "\\" + userDir;
+            return GetFullUserDirectory() + USER_IMAGES_DIR + "\\";
+        }
+
+        public string DeleteImageFile(String name) {
+            string userShapeDir = GetUserImagesDirectory();
+            string imagePathNoExt = userShapeDir + name;
+            string[] extensions = { ".jpg", ".jpeg", ".png", ".gif" };
+            for (int i=0; i< extensions.Length; i++) {
+                try {
+                    if (File.Exists(imagePathNoExt + extensions[i])) {
+                        File.Delete(imagePathNoExt + extensions[i]);
+                    }
+                } catch (Exception ex) {
+                    LogFiles logFiles = new LogFiles(username);
+                    logFiles.ErrorLog(ex);
+                }
+            }
+            return name;
+        }
+
+        private bool ImageExists(string imageNoExtension) {
+            bool exists = false;
+            string[] extensions = { ".jpg", ".jpeg", ".png", ".gif" };
+            for (int i=0; i< extensions.Length; i++) {
+                if (File.Exists(imageNoExtension + extensions[i])) {
+                    exists = true;
+                    break;
+                }
+            }
+            return exists;
+        }
+
+        public void UploadImageFile(byte[] imageBytes, String imageName) {
+            
+            string userShapeDir = GetUserImagesDirectory();
+            try {
+                DirectoryInfo userImagesDir = new DirectoryInfo(userShapeDir);
+                if (!userImagesDir.Exists) {
+                    Directory.CreateDirectory(userShapeDir);
+                }
+
+                Image image = null;
+                string type = "";
+                using (MemoryStream stream = new MemoryStream(imageBytes)) {
+                    image = Image.FromStream(stream);
+                    if (ImageFormat.Jpeg.Equals(image.RawFormat)) {
+                        type = ".jpg";
+                    } else if (ImageFormat.Png.Equals(image.RawFormat)) {
+                        type = ".png";
+                    } else if (ImageFormat.Gif.Equals(image.RawFormat)) {
+                        type = ".gif";
+                    }
+                }
+                string imageFileNameNoExtension = userShapeDir + imageName;
+                string imageFileName = imageFileNameNoExtension + type;
+                int num = 1;
+                while (ImageExists(imageFileNameNoExtension)) {
+                    num++;
+                    imageFileName = userShapeDir + imageName + " " + num + type;
+                }
+                using (BinaryWriter fs = new BinaryWriter(new FileStream(imageFileName, FileMode.Create, FileAccess.Write))) {
+                    fs.Write(imageBytes);
+                    fs.Close();
+                }
+            } catch (Exception ex) {
+                LogFiles logFiles = new LogFiles(username);
+                logFiles.ErrorLog(ex);
+                throw new Exception("Image save failed on the server. Please try again.");
+            }
+        }
+
+        public void UploadImageFile(byte[] imageBytes) {
+            UploadImageFile(imageBytes, "User Shape");
+            
+        }
+
+        public FlashImage[] LoadUserImages() {
+            string userShapeDir = GetUserImagesDirectory();
+            FlashImage[] flashImages;
+            try {
+                DirectoryInfo userImagesDir = new DirectoryInfo(userShapeDir);
+                if (!userImagesDir.Exists) {
+                    return null;
+                }
+                FileInfo[] files = userImagesDir.GetFiles();
+                flashImages = new FlashImage[files.Length];
+                for (int i=0; i< files.Length; i++) {
+                    FileInfo file = files[i];
+                    if (file.Extension.ToLower().Equals(".jpg") || file.Extension.ToLower().Equals(".png") || file.Extension.ToLower().Equals(".gif")) {
+                        try {
+                            flashImages[i] = new FlashImage(file.Name, File.ReadAllBytes(file.FullName));
+                        } catch (Exception excep) {
+                            LogFiles lFiles = new LogFiles(username);
+                            lFiles.ErrorLog(excep);
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                LogFiles logFiles = new LogFiles(username);
+                logFiles.ErrorLog(ex);
+                throw new Exception("User images loading failed.");
+            }
+            return flashImages;
+        }
+
+        protected void CreateRunFile() {
+            DbUse.CreateRunFile(userDir, username);
+        }
+
+        protected void DeleteRunFile() {
+            DbUse.DeleteRunFile(userDir, username);
+        }
+
+
+        void write_mess(string mess)
+        {
+            return;
+            string fname = GetFullUserDirectory() + "\\xxmess1.txt";
+            using (BinaryWriter fs = new BinaryWriter(new FileStream("xxmess1.txt", FileMode.Append, FileAccess.Write)))
+            {
+                fs.Write(mess);
+                fs.Close();
+            }
+        }
+        
+        public CalcClass.CalculationResult CalculateResults() {
+
+          
+             write_mess("at calc results call ");
+            
+            ClassF classE1_1 = new ClassF(GetFullUserDirectory());
+            CalcClass.CalculationResult results = CalcClass.CalculateResults(classE1_1);
+            results.errorMessage = DbUse.removeRedColorFlash(results.errorMessage);
+            results.resultMessage = DbUse.removeRedColorFlash(results.resultMessage);
+            return results;
+        }
+        
+
+    }
+
+    
+
+    public class FlashImage {
+        public string label;
+        public byte[] imageBytes;
+
+        public FlashImage(string name, byte[] imageBytes) {
+            label = name;
+            this.imageBytes = imageBytes;
+        }
+
+    }
+
+
+    public class MPXtable {
+        public int type;
+        public DataTable table;
+
+        public MPXtable(int type, DataTable table) {
+            this.type = type;
+            this.table = table;
+        }
+    }
+
+    public class MPXidTables {
+        public DataTable laborIds;
+        public DataTable equipIds;
+        public DataTable operIds;
+        public DataTable routeIds;
+        public DataTable prodIds;
+        public DataTable ibomIds;
+
+        public MPXidTables() {
+
+        }
+    }
+
+    public class MPXresultsTables {
+        public DataTable laborResTable;
+        public DataTable equipResTable;
+        public DataTable prodResTable;
+        public DataTable operResTable;
+
+        public MPXresultsTables() {
+
+        }
+    }
+
+    public class IDs {
+        public int idOld;
+        public int idNew;
+
+        public IDs(int idOld, int idNew) {
+            this.idOld = idOld;
+            this.idNew = idNew;
+        }
+    }
+
+    public class DiagramData {
+        public int type;
+        public int productId;
+        public int whatifId;
+        public string whatifName;
+        public String productName;
+        public String graphML;
+
+        public DiagramData(int type, int productId, string productName, int whatifId, string graphML) {
+            this.type = type;
+            this.productId = productId;
+            this.whatifId = whatifId;
+            this.productName = productName;
+            this.graphML = graphML;
+        }
+
+        
+
+
+    }
+
+    
+
+    
+
+
+
+
+
+}
+

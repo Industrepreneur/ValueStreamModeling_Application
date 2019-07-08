@@ -1,0 +1,24 @@
+﻿.modalBackground2 
+{
+    
+    background-color: White;
+    filter: alpha(opacity=70);
+    opacity: 0.7; 
+}
+.updateProgress
+{
+    
+    background-color:#CED5E5;
+    position:absolute; 
+    width:150px; 
+    height:50px;    
+}
+.updateProgressMessage
+{
+    margin:3px; 
+    font-family:Trebuchet MS; 
+    font-size:small; 
+    vertical-align: middle;
+}     
+
+

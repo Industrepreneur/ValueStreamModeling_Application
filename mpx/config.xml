@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ========================================================================
+ ==
+ == This file is part of yFiles FLEX 1.7.
+ ==
+ == yWorks proprietary/confidential. Use is subject to license terms.
+ ==
+ == Unauthorized redistribution of this file or of a byte-code version
+ == of this file is strictly forbidden.
+ ==
+ == Copyright (c) 2006 - 2012 by yWorks GmbH, Vor dem Kreuzberg 28,
+ == 72070 Tuebingen, Germany. All rights reserved.
+ ==
+ ========================================================================== -->
+<!-- NOTE: After any change in this file you have to recompile the client application to let
+           the change become effective because the file gets embedded in the DemoConfigTool. -->
+<config>
+	<context-root>../../</context-root>
+	<service-extension></service-extension>
+</config>

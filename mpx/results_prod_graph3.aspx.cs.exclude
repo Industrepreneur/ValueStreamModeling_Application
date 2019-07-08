@@ -1,0 +1,76 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.OleDb;
+using System.Drawing;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.DataVisualization.Charting;
+using System.Web.UI.WebControls;
+
+public partial class results_prod_graph3 : ProductResultPage
+{
+    public results_prod_graph3() {
+        PAGENAME = "results_prod_graph3.aspx";
+        FIELDS = new string[] { "prodid", "ProdDesc", "description", "WIP" };
+        HEADERS = new string[] { null, "Product Name", "What-If Scenario", "WIP" };
+        
+        defaultSortString = "ORDER BY tblProdFore.ProdDesc, tblRsProd.WID";
+        graphQueryString = "SELECT DISTINCTROW tblProdFore.ProdDesc, tblRsProd.WIP, IIf([zstblwhatif].[display],[zstblwhatif].[name],'_skip') AS description, tblRsProd.WID FROM (tblRsProd INNER JOIN tblProdFore ON tblRsProd.ProdID = tblProdFore.ProdID) INNER JOIN zstblwhatif ON tblRsProd.WID = zstblwhatif.WID where (((IIf([zstblwhatif].[display], [zstblwhatif].[Name], '_skip')) <> '_skip'))";
+
+        sortedTableName = "tblRsProd2";
+        value = 2;
+
+        graphType = GraphType.BAR;
+        DESC = new string[] { "description", "ProdDesc" };
+
+        
+    }
+
+    protected void Page_Load(object sender, EventArgs e) {
+        base.Page_Load(sender, e);
+        if (Page.IsPostBack) {
+            Control postBackControl = GetPostBackControl(this.Page);
+            if (!postBackControl.ID.Equals(InputPageControls.BTN_OK_SORT)) {
+                this.SetGraphData();
+            }
+        }
+        if (!Page.IsPostBack) {
+            SetGraphData();
+        }
+    }
+
+    protected override void SetGraphData() {
+        this.SetGraphData("Products", "WIP Level (units)", 0);
+    }
+
+    protected override Control GetTabsDiv() {
+        return tabsDiv;
+    }
+
+    protected override Control GetMenuContainer() {
+        return pnlMenu;
+    }
+
+    protected override GridView getGridView() {
+        return null;
+    }
+
+    protected override Chart getChart() {
+        return chart;
+    }
+
+    public override Panel GetSortPanelContainer() {
+        return sortPanelContainer;
+    }
+
+
+    public override Control GetSortButtonContainer() {
+        return buttondiv;
+    }
+
+    protected override Panel GetCopyTableContainer() {
+        return null;
+    }
+}

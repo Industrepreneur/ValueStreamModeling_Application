@@ -1,0 +1,1712 @@
+﻿<%@ Master Language="C#" AutoEventWireup="true" CodeFile="~/MasterPage.master.cs" Inherits="MasterPageMPX" %>
+
+<%@ Register Assembly="System.Web.DataVisualization, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35"
+    Namespace="System.Web.UI.DataVisualization.Charting" TagPrefix="asp" %>
+<!DOCTYPE HTML>
+
+<%--<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">--%>
+
+<%--TODO:
+logout page or 
+--%>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head runat="server">
+    <%# headerInsert  %>
+    <title>Value Stream Modeling</title>
+    <link href="<%# ResolveClientUrl("mpxbuttons.css")%>" rel="stylesheet" type="text/css" />
+    <link href="<%# ResolveClientUrl("mpxstyle.css")%>" rel="stylesheet" type="text/css" />
+    <link href="<%# ResolveClientUrl("ajaxStyles.css")%>" rel="stylesheet" type="text/css" />
+    <%--    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">--%>
+    <link id="Link2" rel="shortcut icon" type="image/x-icon" href="<%# ResolveClientUrl("favicon.ico")%>" />
+    <link id="Link1" runat="server" rel="icon" href="favicon.ico" type="image/ico" />
+    <%-- <script defer src="https://use.fontawesome.com/releases/v5.0.7/js/all.js"></script>--%>
+    <link href="https://use.fontawesome.com/releases/v5.0.7/css/all.css" rel="stylesheet">
+    <link href='https://fonts.googleapis.com/css?family=Roboto:500,400' rel='stylesheet' type='text/css' />
+    <link href='https://fonts.googleapis.com/css?family=Roboto+Condensed:400,300' rel='stylesheet' type='text/css' />
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Mono" rel="stylesheet">
+    <link href='https://fonts.googleapis.com/css?family=Droid+Serif' rel='stylesheet' type='text/css' />
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="google" content="notranslate">
+    <meta http-equiv="Content-Language" content="en">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+
+    <%--<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>--%>
+
+    <script type="text/javascript" src="<%# ResolveClientUrl("Scripts/shortcuts.js")%>">
+    </script>
+
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+
+
+    <asp:ContentPlaceHolder ID="head" runat="server">
+    </asp:ContentPlaceHolder>
+
+    <script type="text/javascript">
+        var pageLoaded = false;
+        function enableForm() {
+            pageLoaded = true;
+        }
+        window.onload = enableForm;
+        function ShowProgress() {
+            setTimeout(function () {
+                try {
+                    var modalPopupLoading = $find('behLoadingPopup');
+                    modalPopupLoading.show();
+
+                }
+                catch (ex) {
+
+                }
+            }, 100);
+        }
+
+        function ShowProgressRun(pnlRunClientID) {
+            setTimeout(function () {
+                try {
+                    var modalPopupLoading = $find('behLoadingPopup');
+                    var modalPopupRun = $find('modalPopupLoadingBehavior');
+                    if (modalPopupRun) {
+                        var pnlRun = document.getElementById(pnlRunClientID);
+                        if (pnlRun.style.display == "none") {
+                            modalPopupLoading.show();
+                        }
+                    }
+
+
+
+                }
+                catch (ex) {
+
+                }
+            }, 100);
+        }
+
+
+
+        function setCursorToEnd(txtBox) {
+            if (txtBox.createTextRange) {
+                var FieldRange = txtBox.createTextRange();
+                FieldRange.moveStart('character', txtBox.value.length);
+                FieldRange.collapse();
+                FieldRange.select();
+            }
+        }
+
+
+        // validators for general input page
+        function validator(sender, args) {
+            args.IsValid = args.Value > 0;
+        }
+
+        function rangeUtilValidator(sender, args) {
+            args.IsValid = args.Value > 0 && args.Value <= 95;
+        }
+
+        function validatorCv(sender, args) {
+            args.IsValid = args.Value >= 10;
+        }
+
+<%--        function loadXMLDoc() {
+            var xmlhttp;
+            if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+                xmlhttp = new XMLHttpRequest();
+            }
+            else {// code for IE6, IE5
+                xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            xmlhttp.onreadystatechange = function () {
+                if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                    seconds_left = xmlhttp.responseText;
+                }
+            }
+            xmlhttp.open("GET", "<%# ResolveClientUrl("Timer.ashx")%>?" + new Date().getTime(), true);
+            xmlhttp.send();
+        }
+
+        $(function () {
+            var focClientId;
+            var seconds_left = 60 * 30;
+
+            var interval = setInterval(function () {
+                --seconds_left;
+                if (seconds_left > -10) {
+                    if (seconds_left % 10 == 3) {
+                        loadXMLDoc();
+                    }
+                    if (seconds_left < 0) {
+                        document.getElementById('timer_div').innerHTML = "Logout Timer: 00 min 00 s";
+                    } else {
+                        var min = trunc(seconds_left / 60);
+                        var s = seconds_left % 60;
+                        if (min < 10) {
+                            min = "0" + min;
+                        }
+
+                        if (s < 10) {
+                            s = "0" + s;
+                        }
+                        document.getElementById('timer_div').innerHTML = "Logout Timer: " + min + " min " + s + " s";
+                    }
+                }
+            }, 1000);
+        });--%>
+
+
+        function trunc(n) {
+            return n | 0; // bitwise operators convert operands to 32-bit integers
+        }
+
+        function fnSetFocus(txtClientId) {
+            focClientId = txtClientId;
+            setTimeout("fnFocus()", 10);
+
+        }
+
+        function fnFocus() {
+            eval("document.getElementById('" + clientid + "').focus()");
+        }
+
+        function doFocus(buttonName, e) {
+            var key;
+
+            if (window.event)
+                key = window.event.keyCode;     //IE
+            else
+                key = e.which;     //firefox
+
+            if (key == 13) {
+                var btn = document.getElementById(buttonName);
+                if (btn != null) {
+                    btn.click();
+                }
+            }
+        }
+
+        function doClick(buttonName, e) {
+            //the purpose of this function is to allow the enter key to 
+            //point to the correct button to click.
+            var key;
+
+            if (window.event)
+                key = window.event.keyCode;     //IE
+            else
+                key = e.which;     //firefox
+
+            if (key == 13) {
+                //Get the button the user wants to have clicked
+                var btn = document.getElementById(buttonName);
+                if (btn != null) { //If we find the button click it
+                    btn.click();
+                    if (window.event) {
+                        window.event.keyCode = 0;
+                    } else {
+                        e.which = 0;
+                    }
+
+                }
+            }
+        }
+
+
+
+
+        function selectTable(txtClientId, checkClientId) {
+            if (document.getElementById(checkClientId).checked) {
+                eval("document.getElementById('" + txtClientId + "').select()");
+            }
+        }
+
+        function HidePopup(popup) {
+            try {
+                $find(popup).hide();
+            } catch (err) {
+
+            }
+
+        }
+
+        function HideErrorPopup(nameClientId) {
+            $find('modalPopupBehavior').hide();
+            try {
+                eval("document.getElementById('" + nameClientId + "').focus()");
+            }
+            catch (err) {
+
+            }
+
+        }
+
+
+        function HideWantSaveModel() {
+            $find('modalPopupWantSaveBehavior').hide();
+
+        }
+
+        function HideAnalysisHelpPopup() {
+            $find('modalPopupHelpBehavior').hide();
+            return false;
+        }
+        function ShowAnalysisHelpPopup() {
+            $find('modalPopupHelpBehavior').show();
+
+        }
+        var helpClientId;
+        function fnSetFocusHelp(clientid) {
+            helpClientId = clientid;
+            setTimeout("fnFocusOn()", 500);
+            ShowAnalysisHelpPopup();
+
+        }
+
+        function fnFocusOn() {
+            eval("document.getElementById('" + helpClientId + "').focus()");
+        }
+
+        function fnSetFocusName(clientid) {
+            helpClientId = clientid;
+            setTimeout("fnFocusOn()", 500);
+            //$find('modalPopupNewNameBehavior').show();
+        }
+
+        function HideMessagePopup() {
+            $find('modalPopupMessageBehavior').hide();
+        }
+
+        function setClipboard() {
+            //clip = new ZeroClipboard.Client();
+            //event
+            //clip.addEventListener('mousedown',function() {
+            //clip.setText(document.getElementById('txtClipboard').value);
+            //});
+            //clip.addEventListener('complete',function(client,text) {
+            //  alert('copied: ' + text);
+            //});
+            //glue it to the button
+            //clip.setHandCursor = true;
+            //clip.glue('btnCopyToClipboard');
+        }
+
+
+        function ResetComboBox(id) {
+            // Get ComboBox
+            var Combo = Sys.Application.findComponent(id);
+
+            // Get Button Style
+            var ButtonStyle = Combo.get_buttonControl().style;
+
+            // Reset Button Image
+            //ButtonStyle.height = Combo.get_textBoxControl().offsetHeight + 'px'; // does not work - unfortunately the offsetHeight is 0 :-(
+            //ButtonStyle.width = ButtonStyle.height;
+            ButtonStyle.height = '22px';
+            ButtonStyle.width = ButtonStyle.height;
+
+            // Reset Options List
+            var OptionListStyle = Combo.get_optionListControl().style;
+            Combo._optionListHeight = null;
+            Combo._optionListWidth = null;
+            OptionListStyle.display = 'block';
+        }
+
+        function selectText() {
+            //eval("document.getElementById('inputBla').focus()");
+            eval("document.getElementById('inputBla').select()");
+        }
+
+        function fnClickOK(sender, e) {
+            __doPostBack(sender, e);
+        }
+
+        function popupClick(txtClientId, rowId) {
+            $find('popupBehavior').show();
+            document.getElementById('selectedRowId').value = rowId;
+            eval("document.getElementById('" + txtClientId + "').focus()");
+
+        }
+
+
+
+        function copyTableToClipboard() {
+            var copyTableFields = document.getElementById('txtClipboard').value;
+            copyTableFields = document.form1.elements['txtClipboard'].value;
+            var returnVal = window.clipboardData.setData('Text', copyTableFields);
+            //alert(returnVal);
+            //var clip = new ZeroClipboard.Client();
+            //clip.setText = copyTableFields;
+            //clip.setHandCursor = true;
+            //clip.glue('btnCopyToClipboard');
+            //document.execCommand('Copy');
+
+        }
+
+
+
+
+
+        function dosClick() {
+            //var elem = document.getElementById('hidButton');
+            //elem.innerText = "hey it fired";
+            //if (typeof elem.onclick == "function") {
+            //    elem.onclick.apply(elem);
+            //}
+            //__doPostBack('hidButton', '');
+
+        }
+
+    </script>
+
+    <%--THIS IS SETTING STYLING OF THE CURRENT MENU ITEMS--%>
+    <script>
+        $(function () {
+            $('a').each(function () {
+                if ($(this).prop('href') == window.location.href) {
+                    $(this).addClass('curr-sub-item'); $(this).parents('li').addClass('curr-menu-item');
+                }
+                else if ($(this).prop('href').includes("products") && window.location.href.includes("products") && $(this).prop('href').includes("input") && window.location.href.includes("input")) {
+                    $(this).addClass('curr-sub-item');
+                }
+            });
+        });
+    </script>
+
+
+    <script>
+
+
+        function menuToggle() {
+            var myString = document.getElementById("toggler").value;
+            if (myString == "Input") {
+                menuToggleOn();
+            } else {
+                menuToggleOff();
+            }
+        }
+
+        function menuToggleOn() {
+            //document.getElementById("menu-input").style.visibility = "hidden";
+            document.getElementById("menu-input").style.top = "-100px";
+            document.getElementById("toggler").value = "Output";
+            document.getElementById("menu-output").style.top = "0px";
+            document.getElementById("menu-output").style.visibility = "visible";
+        }
+
+        function menuToggleOff() {
+            //document.getElementById("menu-output").style.visibility = "hidden";
+            document.getElementById("menu-output").style.top = "100px";
+            document.getElementById("toggler").value = "Input";
+            document.getElementById("menu-input").style.top = "0px";
+            document.getElementById("menu-input").style.visibility = "visible";
+        }
+
+    </script>
+
+
+    <script>
+        var myHREF = window.location.href;
+        $(function () {
+
+            $("#accordion-1").val("visible");
+            $("#accordion-2").val("hidden");
+            $("#accordion-3").val("hidden");
+
+
+        });
+
+        $(document).ready(function () {
+
+
+
+
+            $("#calc-progress-message").val("idle");
+            $("#toggle-scenario").val("normal");
+            $("#drawer").val("hidden");
+
+            document.getElementById("accordion-1").addEventListener("mousedown", accordionToggle, false);
+            document.getElementById("accordion-2").addEventListener("mousedown", accordionToggle, false);
+            //document.getElementById("accordion-3").addEventListener("mousedown", accordionToggle, false);
+            //document.getElementById("calc-button").addEventListener("mousedown", InitiateCalculations, false);
+            document.getElementById("toggle-scenario").addEventListener("mousedown", toggleScenario, false);
+            document.addEventListener("keypress", dealWithKeyboard, false);
+            document.addEventListener("mousedown", dealWithOpenToggles, false);
+
+
+        });
+
+        function toggleScenario(e) {
+            if (e.which == 1) {
+                var myString = $("#toggle-scenario").val();
+                if (myString == "normal") {
+                    document.getElementById("toggle-scenario").innerHTML = "<span class='fas fa-toggle-on fa-2x'></span>";
+                    document.getElementById("toggle-scenario").style.color = "var(--font-accent)";
+                    document.getElementById("toggle-scenario").value = "scenario";
+
+                } else {
+                    document.getElementById("toggle-scenario").innerHTML = "<span class='fas fa-toggle-off fa-2x'></span>";
+                    document.getElementById("toggle-scenario").style.color = "var(--light-accent)";
+                    document.getElementById("toggle-scenario").value = "normal";
+                }
+            }
+        }
+
+        function dealWithKeyboard(e) {
+            if (e.keyCode == 32 && e.target == document.body) {
+                menuToggle();
+            }
+        }
+
+        function dealWithOpenToggles(e) {
+            if (e.which == 1) {
+                var myString = $("#drawer").val();
+                if (myString == "hidden") {
+                    if ((e.target.offsetParent != null && e.target.id == "drawer-handle") || (e.target.offsetParent != null && e.target.offsetParent.id == "drawer-handle")) {
+                        drawerToggle();
+                    }
+                 
+                } else {
+                    if (e.target.offsetParent != null) {
+                        //if ((e.target.offsetParent.id != "drawer-body" && e.target.offsetParent.id != "drawer-accordion-2") && (e.target.offsetParent.id != "drawer-body" && e.target.offsetParent.id != "drawer-accordion-3") && (e.target.offsetParent.id != "drawer-body" && e.target.offsetParent.id != "drawer-accordion-1") && e.target.id != "drawer-header" && e.target.id != "drawer-logo" && e.target.id != "drawer-footer" && e.target.offsetParent.id != "drawer-footer" && e.target.offsetParent.id != "drawer-icons" && e.target.id != "drawer-icons") {
+                        //    drawerToggle();
+                        //}
+                           if (e.target.id == "drawer-click-off") {
+                         drawerToggle();
+                    }
+                    } else {
+                        drawerToggle();
+                    }
+                }
+            }
+        }
+
+        function accordionToggle(e) {
+            var myString1 = document.getElementById("accordion-1").value;
+            var myString2 = document.getElementById("accordion-2").value;
+            var myString3 = document.getElementById("accordion-3").value;
+            if (e.target.id == "1" || e.target.id == "accordion-1") {
+                if (myString2 == "visible" && myString3 == "hidden") {
+                    document.getElementById("drawer-accordion-2").style.top = "calc(100% - 9vh - 1px)";
+                    document.getElementById("accordion-2").value = "hidden";
+                } else if (myString2 == "hidden" && myString3 == "visible") {
+                    document.getElementById("drawer-accordion-2").style.top = "calc(100% - 9vh - 1px)";
+                    document.getElementById("accordion-2").value = "hidden";
+                    document.getElementById("drawer-accordion-3").style.top = "calc(100% - 4.5vh)";
+                    document.getElementById("accordion-3").value = "hidden";
+                } else {
+                    /*DO NOTHING IF ALL ACCORDIONS ARE CLOSED*/
+                }
+            } else if (e.target.id == "2" || e.target.id == "accordion-2") {
+                if (myString2 == "hidden" && myString3 == "hidden") {
+                    document.getElementById("drawer-accordion-2").style.top = "calc(4.5vh + 1px)";
+                    document.getElementById("accordion-2").value = "visible";
+                } else if (myString2 == "visible" && myString3 == "hidden") {
+                    document.getElementById("drawer-accordion-2").style.top = "calc(100% - 9vh - 1px)";
+                    document.getElementById("accordion-2").value = "hidden";
+                } else if (myString2 == "hidden" && myString3 == "visible") {
+                    document.getElementById("drawer-accordion-3").style.top = "calc(100% - 4.5vh)";
+                    document.getElementById("accordion-3").value = "hidden";
+                    document.getElementById("accordion-2").value = "visible";
+                }
+            } else if (e.target.id == "3" || e.target.id == "accordion-3") {
+                if (myString2 == "hidden" && myString3 == "hidden") {
+                    document.getElementById("drawer-accordion-2").style.top = "4.5vh";
+                    document.getElementById("accordion-2").value = "hidden";
+                    document.getElementById("drawer-accordion-3").style.top = "9vh";
+                    document.getElementById("accordion-3").value = "visible";
+                } else if (myString2 == "visible" && myString3 == "hidden") {
+                    document.getElementById("drawer-accordion-3").style.top = "9vh";
+                    document.getElementById("accordion-3").value = "visible";
+                    document.getElementById("accordion-2").value = "hidden";
+                } else if (myString2 == "hidden" && myString3 == "visible") {
+                    document.getElementById("drawer-accordion-3").style.top = "calc(100% - 4.5vh)";
+                    document.getElementById("accordion-3").value = "hidden";
+                    document.getElementById("accordion-2").value = "visible";
+                }
+            }
+        }
+
+
+
+        function drawerToggle() {
+            var myString = document.getElementById("drawer").value;
+            if (myString == "hidden") {
+                document.getElementById("drawer").style.left = "0vw";
+                document.getElementById("drawer").value = "visible";
+                document.getElementById("drawer-click-off").style.visibility = "visible";
+            } else {
+                document.getElementById("drawer").style.left = "-20vw";
+                document.getElementById("drawer").value = "hidden";
+                document.getElementById("drawer-click-off").style.visibility = "hidden";
+            }
+        }
+
+    </script>
+
+    <script>
+        $(document).ready(function () { $("input").attr("autocomplete", "off"); });
+    </script>
+
+    <script>
+        var sessionTimer;
+        var sessionTimeout = 60000 * 20;
+        $(document).ready(startSessionTimer());
+
+        function startSessionTimer() {
+            sessionTimer = setTimeout(function () {
+                //alert("Session has ended");
+                window.location.href = "/timeout.aspx";
+                //$("#btnLogout").click();
+                //COULD HAVE THIS CLICK THE LOGOUT BUTTON
+            }, sessionTimeout);
+   
+
+        }
+
+        function clearSessionTimer() {
+            clearTimeout(sessionTimer);
+        }
+
+
+        function refreshSessionTimer() {
+
+            $.ajax(
+                {
+
+                    type: 'POST',
+
+                    dataType: 'json',
+                    contentType: 'application/json',
+                    url: '/api/mpx/v1/API.aspx/refreshSession',
+
+
+                    success: function (response) {
+                        // calling method  
+                        clearSessionTimer();
+                        startSessionTimer();
+                    }
+
+                });
+
+        }
+
+        $(window).on("click", debounce(refreshSessionTimer, 250, false));
+        $(window).on("keypress", debounce(refreshSessionTimer, 250, false));
+        //window.onkeypress(resetSessionTimer);
+        //window.onclick(resetSessionTimer);
+        //SHOULD THIS HAVE A DEBOUNCE SCRIPT
+
+
+
+        function debounce(func, wait, immediate) {
+            var timeout;
+            return function () {
+                var context = this, args = arguments;
+                var later = function () {
+                    timeout = null;
+                    if (!immediate) func.apply(context, args);
+                };
+                var callNow = immediate && !timeout;
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+                if (callNow) func.apply(context, args);
+            };
+        };
+
+
+
+
+    </script>
+
+</head>
+
+<%--begin the page--%>
+
+<body>
+
+    <header>
+        <div id="drawer">
+            <div id="drawer-header">
+                <img id="drawer-logo" alt="Value Stream Modeling" style="margin: auto; user-select: none; max-width: 75%" src="/images/logo.png" />
+
+            </div>
+
+            <div id="drawer-body">
+                <div id="transparent-progress"></div>
+                <ul id="drawer-body-accordion">
+                    <li id="drawer-accordion-1" style="top: 0; height: calc(100% - 9vh);" class="drawer-accordion">
+                        <ul class="accordion">
+                            <li id="1" class="accordion-header">
+                                <label id="accordion-1" class="drawer-toggle-text">INPUT</label></li>
+                            <li class="drawer-link"><a href="/models.aspx">Models</a></li>
+                            <li class="drawer-link"><a href="/scenarios/create.aspx">Scenarios</a></li>
+                            <li class="drawer-link"><a href="/input/models/table.aspx">Summary</a></li>
+                            <li class="drawer-link"><a href="/input/products/table.aspx">Products</a></li>
+                            <li class="drawer-link"><a href="/input/products/operations.aspx">Operations</a></li>
+                            <li class="drawer-link"><a href="/input/products/routings.aspx">Routings</a></li>
+                            <li class="drawer-link"><a href="/input/products/bom.aspx">IBOM</a></li>
+                            <li class="drawer-link"><a href="/input/labor/table.aspx">Labor</a></li>
+                            <li class="drawer-link"><a href="/input/equipment/table.aspx">Equipment</a></li>
+                        </ul>
+                    </li>
+                    <li id="drawer-accordion-2" style="top: calc(100% - 9vh - 1px); height: calc(100% - 9vh);" class="drawer-accordion">
+                        <ul class="accordion">
+                            <li id="2" class="accordion-header">
+                                <label id="accordion-2" class="drawer-toggle-text">OUTPUT</label></li>
+                            <li class="drawer-link"><a href="/output/summary.aspx">Summary Table</a></li>
+                            <li class="drawer-link"><a href="/output/products/time.aspx">Lead-time</a></li>
+                            <li class="drawer-link"><a href="/output/products/production.aspx">Production Volume</a></li>
+                            <li class="drawer-link"><a href="/output/products/wip.aspx">WIP</a></li>
+                            <li class="drawer-link"><a href="/output/labor/utilization.aspx">Labor Utilization</a></li>
+                            <li class="drawer-link"><a href="/output/labor/queue.aspx">Labor WFE</a></li>
+                            <li class="drawer-link"><a href="/output/equipment/utilization.aspx">Equipment Utilization</a></li>
+                            <li class="drawer-link"><a href="/output/equipment/queue.aspx">Equipment WFL</a></li>
+                        </ul>
+                    </li>
+                    <li id="drawer-accordion-3" style="top: calc(100% - 4.5vh); height: calc(100% - 9vh);" class="drawer-accordion">
+                        <ul class="accordion">
+                            <li id="3" style="cursor: not-allowed;" class="accordion-header">
+                                <label id="accordion-3" class="drawer-toggle-text" style="cursor: not-allowed;">ADVANCED</label></li>
+                            <li class="drawer-link hidden"><a href="#">Critical Path 1</a></li>
+                            <li class="drawer-link hidden"><a href="#">Critical Path 2</a></li>
+                            <li class="drawer-link hidden"><a href="#">Step-Function Analysis</a></li>
+                            <li class="drawer-link hidden"><a href="#">Lot-size Optimization</a></li>
+                        </ul>
+                    </li>
+
+                </ul>
+                <div id="drawer-icons">
+                    <a href="/account.aspx" class="fas fa-user" style="margin: auto; width: 5vw; display: flex; height: 100%;"></a>
+                    <button id="mpx-admin" disabled="disabled" type="button" class="fas fa-cogs" style="margin: auto; width: 5vw; display: flex; height: 100%; cursor: not-allowed; border: none; background: transparent; text-align: center; align-items: center; justify-content: center; color: #5a5757;">
+                    </button>
+                    <script>
+                        $(document).ready(function () {
+                            document.getElementById("mpx-admin").addEventListener("click", function () {
+                                window.location.href = "/mpx_admin.aspx";
+
+                            });
+                        });
+
+                    </script>
+                    <a id="btnLogout" href="/logout.aspx" class="fas fa-sign-out-alt" style="margin: auto; width: 5vw; display: flex; height: 100%;"></a>
+                </div>
+            </div>
+            <div id="drawer-footer">
+                <span style="margin: auto; font-size: 0.7em;">Creative Commons NC 2018 </span>
+            </div>
+        </div>
+        <div id="delete-bar">
+            <div id="btnDelete">
+                <span>DELETE<i id="" class="fas fa-trash" style="padding-left: 1vw;"></i></span>
+            </div>
+        </div>
+        <div class="header-bar">
+            <div id="drawer-handle"><span class="fas fa-bars fa-1x" style="margin: auto; color: var(--font);"></span></div>
+
+            <div id="inner-header-buttons">
+                <script>
+                    //will add statement here for what-if mode as well
+                    var myHREF = window.location.href;
+                    if (myHREF.includes("input")) {
+                        if (myHREF.includes("products")) {
+                            if (myHREF.includes("table")) {
+                                var myButtonString = "<input id='add-button' type='button' value='ADD' class='btn-page' /><input id='back-button' type='button' value='BACK' class='btn-page' style='margin: 0px 10px;' disabled='disabled'/><input id='filter-button' type='button' value='FILTER' class='btn-page' disabled='disabled' />";
+                            } else {
+                                var myButtonString = "<input id='add-button' type='button' value='ADD' class='btn-page' /><input id='back-button' type='button' value='BACK' class='btn-page' style='margin: 0px 10px;' /><input id='filter-button' type='button' value='FILTER' class='btn-page' disabled='disabled' />";
+                            }
+                            //end if
+                        } else if (myHREF.includes("models")) {
+                            if (myHREF.includes("table")) {
+                                var myButtonString = "<input id='add-button' type='button' value='ADD' class='btn-page' /><input id='back-button' type='button' value='BACK' class='btn-page' style='margin: 0px 10px;' disabled='disabled'/><input id='filter-button' type='button' value='FILTER' class='btn-page' disabled='disabled' />";
+                            } else {
+                                var myButtonString = "<input id='add-button' type='button' value='ADD' class='btn-page' /><input id='back-button' type='button' value='BACK' class='btn-page' style='margin: 0px 10px;' /><input id='filter-button' type='button' value='FILTER' class='btn-page' disabled='disabled' />";
+                            }
+                            //end if
+                        } else {
+                            var myButtonString = "<input id='add-button' type='button' value='ADD' class='btn-page' /><input id='back-button' type='button' value='BACK' class='btn-page' style='margin: 0px 10px;' disabled='disabled'/><input id='filter-button' type='button' value='FILTER' class='btn-page' disabled='disabled' />";
+                        }
+                    } else if (myHREF.includes("output")) {
+                        var myButtonString = "<input id='add-button' type='button' value='ADD' class='btn-page' disabled='disabled'/><input id='back-button' type='button' value='BACK' class='btn-page' style='margin: 0px 10px;' disabled='disabled'/><input id='filter-button' type='button' value='FILTER' class='btn-page'  />";
+                    } else {
+                        var myButtonString = "<input id='add-button' type='button' value='ADD' class='btn-page' disabled='disabled'/><input id='back-button' type='button' value='BACK' class='btn-page' style='margin: 0px 10px;' disabled='disabled'/><input id='filter-button' type='button' value='FILTER' class='btn-page' disabled='disabled' />";
+                    }
+                    document.getElementById("inner-header-buttons").innerHTML = myButtonString;
+                </script>
+                <%-- <input id='add-button' type='button' value='ADD' class='btn-page' />
+                    <input id='back-button' type='button' value='BACK' class='btn-page' style='margin: 0px 10px;' disabled='disabled'/>
+                    <input id='filter-button' type='button' value='FILTER' class='btn-page' disabled='disabled' />--%>
+            </div>
+
+
+
+
+
+            <div id="calc-button-container">
+                <label title="Calculate" id="calc-button"><span id="calc-icon" class="fas fa-play"></span></label>
+            </div>
+            <div id="calc-progress-message">
+                <span id="progress-message" class="progress-message" title=""></span>
+            </div>
+
+
+            <script>
+
+                var tick = 0;
+                var myTimer1;
+                var myTimer2;
+
+                $(document).ready(function () {
+
+                    document.getElementById("calc-button").addEventListener("click", InitiateCalculations);
+
+                });
+
+                function startThinking() {
+                    document.getElementById('pnlCalculating').style.zIndex = "5";
+                    document.getElementById('pnlCalculating').style.visibility = "visible";
+                    document.getElementById('pnlCalculating').style.background = "transparent";
+                    document.getElementById('pnlCalculating').style.cursor = "progress";
+                    document.getElementById('calc-button-container').style.background = "var(--light-accent)";
+
+                    //  document
+                    //    .getElementById("calc-icon")
+                    //    .animate([{ opacity: 1 }, { opacity: 0 }], 500);
+
+                    //document.getElementById("calc-button").innerHTML =
+                    //    "<span id='calc-icon' class='fas fa-spinner fa-spin' ></span>";
+                    //document
+                    //    .getElementById("calc-icon")
+                    //    .animate([{ opacity: 0 }, { opacity: 1 }], 500);
+                }
+                function stopThinking() {
+                    document.getElementById('pnlCalculating').style.visibility = "hidden";
+                    document.getElementById('pnlCalculating').style.cursor = "progress";
+                    document.getElementById('pnlCalculating').style.background = "transparent";
+                    document.getElementById('pnlCalculating').style.zIndex = "2";
+                    document.getElementById('calc-button-container').style.background = "transparent";
+                }
+
+                function InitiateCalculations(e) {
+                    if (e.which == 1) {
+                        startThinking();
+                        var myString = document.getElementById("calc-progress-message").value;
+
+                        if (myString == "idle") {
+
+                            CalculationsNecessary();
+
+
+
+                        } else if (myString == "running") {
+
+                            if (confirm("Calculations are currently running. are you sure you want to cancel?")) {
+
+                                CancelCalculations();
+
+
+                            } else {
+                                /*Do nothing if they do not want to cancel calculations*/
+
+                            }
+                        } else {
+                            /*Further statements can be added for querying states or failure etc*/
+                        }
+                    } else {
+                        /*Do nothing if not left-mousedown*/
+                    }
+                    /*End Function*/
+                }
+
+                function CalculationsNecessary() {
+                  <%--  var xmlhttp;
+                    if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+                        xmlhttp = new XMLHttpRequest();
+                    }
+                    else {// code for IE6, IE5
+                        xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                    }
+                    xmlhttp.onreadystatechange = function () {
+                        if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                            var myVar = xmlhttp.responseText;
+                            if (myVar == "True") {
+
+                                StartCalculations(0);
+                            } else if (myVar == "False" && confirm("Calculations are not necessary, do you want to run them anyway?")) {
+
+                                StartCalculations(1);
+                                /*THERE IS A BUG THAT STOPS USER FROM RUNNING CALCULATIONS WHEN THEY OPEN MODEL FOR FIRST TIME, NEED TO MARK MODEL AS CHANGED WHEN LOADING*/
+                            } else {
+                                /*clear any calculation/query styling*/
+                                stopThinking();
+                            }
+
+                        }
+                    }
+
+
+
+                    var commandString = "/Scripts/needsRun.ashx?username=" + "<%=username%>" + "&userDir=" + "<%=MyUtilities.clean(userDir)%>" + "&mainDir=" + "<%=HttpContext.Current.Server.MapPath("~").Replace("\\","\\\\") + "App_Data\\\\"%>" + "&cookie=" + "<%=System.Uri.EscapeDataString(Request.Cookies[DbUse.LOGIN_COOKIE].Value)%>";
+
+                    xmlhttp.open("GET", commandString, true);
+
+                    xmlhttp.send();--%>
+
+
+
+
+                    $.ajax(
+                        {
+
+                            type: 'POST',
+                            dataType: 'json',
+                            contentType: 'application/json',
+                            url: '/api/mpx/v1/calculations.aspx/NeedsReCalc',
+
+
+                            success: function (response) {
+                                // calling method  
+                                var myVar = response.d;
+                                if (myVar == true) {
+
+                                    StartCalculations(0);
+                                } else if (myVar == false && confirm("Calculations are not necessary, do you want to run them anyway?")) {
+
+                                    StartCalculations(1);
+                                    /*THERE IS A BUG THAT STOPS USER FROM RUNNING CALCULATIONS WHEN THEY OPEN MODEL FOR FIRST TIME, NEED TO MARK MODEL AS CHANGED WHEN LOADING*/
+                                } else {
+                                    /*clear any calculation/query styling*/
+                                    stopThinking();
+                                }
+
+                            },
+
+                            error: function () {
+                                alert("Error loading data! Please try again.");
+                            }
+
+                        });
+
+                }
+
+
+
+
+
+                function StartCalculations(calcType) {
+
+                    StartProgress();
+
+                    if (calcType == 0) {
+                        $.ajax(
+                            {
+
+                                type: 'POST',
+                                dataType: 'json',
+                                contentType: 'application/json',
+                                url: '/api/mpx/v1/calculations.aspx/ExecuteNecessary',
+
+
+                                success: function (response) {
+                                    // calling method  
+                                    var myVar = response.d;
+                                    StopProgress(myVar);
+
+                                },
+
+                                error: function () {
+                                    var myVar = "Error loading data! Please try again.";
+                                    StopProgress(myVar);
+                                }
+
+                            });
+                    } else {
+                        $.ajax(
+                            {
+
+                                type: 'POST',
+                                dataType: 'json',
+                                contentType: 'application/json',
+                                url: '/api/mpx/v1/calculations.aspx/ExecuteAll',
+
+
+                                success: function (response) {
+                                    // calling method  
+                                    var myVar = response.d;
+                                    StopProgress2(myVar);
+
+                                },
+
+                                error: function () {
+                                    var myVar = "Error loading data! Please try again.";
+                                    StopProgress(myVar);
+                                }
+
+                            });
+                    }
+
+           <%--       var xmlhttp;
+                    if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+                        xmlhttp = new XMLHttpRequest();
+                    }
+                    else {// code for IE6, IE5
+                        xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                    }
+                    xmlhttp.onreadystatechange = function () {
+                        if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+
+                            var myString = xmlhttp.responseText;
+                            StopProgress(myString);
+
+                        }
+                    }
+
+                    var commandString = "/Scripts/run.ashx?username=" + "<%=username%>" + "&userDir=" + "<%=MyUtilities.clean(userDir)%>" + "&mainDir=" + "<%=HttpContext.Current.Server.MapPath("~").Replace("\\","\\\\") + "App_Data\\\\"%>" + "&cookie=" + "<%=System.Uri.EscapeDataString(Request.Cookies[DbUse.LOGIN_COOKIE].Value)%>" + "&type=" + calcType;
+                    xmlhttp.open("GET", commandString, true);
+
+                    xmlhttp.send();--%>
+
+                    //   StartProgress();
+
+                    //myTimer1 = setInterval(LoadCalculationProgress, 500);
+
+                }
+
+                //THIS WILL NOT WORK INSYNC WITH CALC
+                function LoadCalculationProgress() {
+
+                    //$.ajax(
+                    //    {
+
+                    //        type: 'POST',
+                    //        dataType: 'json',
+                    //        contentType: 'application/json',
+                    //        url: '/api/mpx/v1/calculations.aspx/GetCalcProgress',
+
+
+                    //        success: function (response) {
+                    //            // calling method  
+                    //            var myVar = response.d;
+                    //            document.getElementById('progress-message').innerHTML = myVar;
+
+                    //        },
+
+                    //        error: function () {
+                    //            var myVar = "Error loading data! Please try again.";
+                    //            document.getElementById('progress-message').innerHTML = myVar;
+                    //        }
+
+                    //    });
+
+                    //var xmlhttp;
+
+                    //if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+
+                    //    xmlhttp = new XMLHttpRequest();
+
+                    //}
+
+                    //else {// code for IE6, IE5
+
+                    //    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                    //}
+                    //xmlhttp.onreadystatechange = function () {
+
+                    //    if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+
+                    //        if (xmlhttp.responseText != null) {
+
+                    //            var myString = xmlhttp.responseText;
+                    //            document.getElementById('progress-message').innerHTML = myString;
+
+                    //        }
+
+
+                    //    }
+
+                    //}
+
+                    //xmlhttp.open("GET", "/Scripts/Progress.ashx?type=r&b=" + new Date().getTime(), true);
+                    //xmlhttp.send();
+
+                }
+
+
+                function changeLoading() {
+                    if (tick < 50) {
+                        tick++;
+                        document.getElementById("progress").style.right = 100 - tick + "%";
+                    } else if (tick >= 50 && tick < 100) {
+                        /*tick++;*/
+                        tick++;
+                        document.getElementById("progress").style.right = 100 - tick + "%";
+                    } else if (tick >= 100 && tick < 150) {
+                        tick++;
+                        document.getElementById("progress").style.right = 100 - tick + "%";
+                    } else {
+                        tick = 50;
+                    }
+                }
+
+                function StartProgress() {
+
+
+                    document.getElementById('pnlCalculatingMessage').style.visibility = "hidden";
+                    document.getElementById('pnlCalculating').style.zIndex = "5";
+                    document.getElementById('pnlCalculating').style.visibility = "visible";
+
+                    document.getElementById('pnlCalculating').style.cursor = "progress";
+
+
+                    document.getElementById("progress").style.visibility = "visible";
+
+                    //document.getElementById('calc-button-container').style.right = "15vw";
+                    document.getElementById('calc-button-container').style.background = "var(--light-accent)";
+
+                    document
+                        .getElementById("calc-icon")
+                        .animate([{ opacity: 1 }, { opacity: 0 }], 500);
+                    document.getElementById("calc-button").setAttribute("title", "Calculating");
+                    document.getElementById("calc-button").innerHTML =
+                        "<span id='calc-icon' class='fas fa-spinner fa-spin' ></span>";
+                    document
+                        .getElementById("calc-icon")
+                        .animate([{ opacity: 0 }, { opacity: 1 }], 500);
+
+                    document.getElementById("calc-progress-message").value = "running";
+                    //document.getElementById("calc-progress-message").style.width = "15vw";
+
+                    //document.getElementById("calc-button").removeEventListener("click", InitiateCalculations);
+                    //document.getElementById("calc-button").addEventListener("click", CancelCalculations);
+
+                    myTimer2 = setInterval(changeLoading, 20);
+                }
+
+                function StopProgress2(myString) {
+
+                    //clearInterval(myTimer1);
+                    clearInterval(myTimer2);
+                    document.getElementById('progress').style.visibility = "hidden";
+
+                    document.getElementById('pnlCalculating').style.cursor = "default";
+                    document.getElementById('pnlCalculating').style.background = "rgba(253, 253, 253, .75)";
+                    document.getElementById('pnlCalculating').style.zIndex = "5";
+                    document.getElementById('pnlCalculatingMessage').style.visibility = "visible";
+                    document.getElementById("calcOK").addEventListener("click", clearProgress);
+
+                    document.getElementById("resultDiv").innerHTML = myString;
+
+                    document
+                        .getElementById("calc-icon")
+                        .animate([{ opacity: 1 }, { opacity: 0 }], 500);
+                    document.getElementById("calc-button").setAttribute("title", "Calculate");
+                    document.getElementById("calc-button").innerHTML =
+                        "<span id='calc-icon' class='fas fa-play' ></span>";
+                    document
+                        .getElementById("calc-icon")
+                        .animate([{ opacity: 0 }, { opacity: 1 }], 500);
+
+                    document.getElementById("calc-progress-message").value = "idle";
+                    document.getElementById("calc-progress-message").style.width = "0px";
+                    document.getElementById('calc-button-container').style.right = "0";
+
+                    //document.getElementById("calc-button").removeEventListener("click", CancelCalculations);
+                    //document.getElementById("calc-button").addEventListener("click", InitiateCalculations);
+
+                }
+
+                function StopProgress(myString) {
+
+                    //clearInterval(myTimer1);
+                    clearInterval(myTimer2);
+                    document.getElementById('progress').style.visibility = "hidden";
+
+                    document.getElementById('pnlCalculating').style.cursor = "default";
+                    document.getElementById('pnlCalculating').style.background = "rgba(253, 253, 253, .75)";
+                    document.getElementById('pnlCalculating').style.zIndex = "5";
+                    document.getElementById('pnlCalculatingMessage').style.visibility = "visible";
+                    document.getElementById("calcOK").addEventListener("click", clearProgress);
+                    document.getElementById("resultDiv").innerHTML = myString;
+
+                    document
+                        .getElementById("calc-icon")
+                        .animate([{ opacity: 1 }, { opacity: 0 }], 500);
+                    document.getElementById("calc-button").setAttribute("title", "Calculate");
+                    document.getElementById("calc-button").innerHTML =
+                        "<span id='calc-icon' class='fas fa-play' ></span>";
+                    document
+                        .getElementById("calc-icon")
+                        .animate([{ opacity: 0 }, { opacity: 1 }], 500);
+
+                    document.getElementById("calc-progress-message").value = "idle";
+                    document.getElementById("calc-progress-message").style.width = "0px";
+                    document.getElementById('calc-button-container').style.right = "0";
+
+                    //document.getElementById("calc-button").removeEventListener("click", CancelCalculations);
+                    //document.getElementById("calc-button").addEventListener("click", InitiateCalculations);
+
+                }
+
+                function clearProgress() {
+
+                    document.getElementById('calc-button-container').style.right = "0";
+                    document.getElementById('calc-button-container').style.background = "transparent";
+
+                    document.getElementById('pnlCalculating').style.visibility = "hidden";
+                    document.getElementById('pnlCalculatingMessage').style.visibility = "hidden";
+                    document.getElementById('pnlCalculating').style.cursor = "progress";
+                    document.getElementById('pnlCalculating').style.background = "transparent";
+                    document.getElementById('pnlCalculating').style.zIndex = "2";
+
+                    document.getElementById("calcOK").removeEventListener("click", clearProgress);
+                    if (window.location.href.includes("output")) {
+                        window.location.href = window.location.href;
+                    } else {
+                        //document.getElementById("calcFakeOK").click();
+                    }
+
+                }
+
+                function CancelCalculations() {
+                    //DISABLING THIS FEATURE
+             <%--       var xmlhttp;
+                    if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+                        xmlhttp = new XMLHttpRequest();
+                    }
+                    else {// code for IE6, IE5
+                        xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                    }
+                    xmlhttp.onreadystatechange = function () {
+                        if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                            var myString = xmlhttp.responseText;
+                            clearInterval(myTimer1);
+                            clearInterval(myTimer2);
+                            document.getElementById('progress-message').innerHTML = myString;
+                        }
+                    }
+
+                    var commandString = "/Scripts/StopCalc.ashx?username=" + "<%=username%>" + "&userDir=" + "<%=MyUtilities.clean(userDir)%>" + "&mainDir=" + "<%=HttpContext.Current.Server.MapPath("~").Replace("\\","\\\\") + "App_Data\\\\"%>" + "&cookie=" + "<%=System.Uri.EscapeDataString(Request.Cookies[DbUse.LOGIN_COOKIE].Value)%>";
+                    xmlhttp.open("GET", commandString, true);
+
+                    xmlhttp.send();--%>
+
+                }
+
+            </script>
+        </div>
+        <div class="progress-bar">
+            <div id="progress" class="progress">
+                <div id="seg-1"></div>
+                <div id="seg-2"></div>
+                <div id="seg-3"></div>
+            </div>
+        </div>
+
+
+
+        <div id="inner-header" class="inner-header">
+            <div class="header-wrapper">
+                <nav id="quick-nav" class="header-nav" style="">
+                    <div id="first-menu-container" class="">
+                        <div class="menu-container">
+                            <input type="button" value="" id="toggler" class="menu-element-leader" onmousedown="menuToggle()" />
+
+                        </div>
+                    </div>
+                    <div id="second-menu-container" class="">
+                        <div class="menu-container" style="height: 20px; width: 3px; background: #dddddd; margin: auto;"></div>
+                    </div>
+                    <div id="third-menu-container" class="">
+                        <div class="inner-container">
+                            <div id="menu-input" style="">
+                            </div>
+                            <div id="menu-output" style="">
+
+                                <%--          <a href="/output/products/time.aspx">
+                    <div class="menu-element-container"><span class="menu-element">Lead-time</span></div>
+                </a>
+                <a href="/output/products/wip.aspx">
+                    <div class="menu-element-container"><span class="menu-element">WIP</span></div>
+                </a>
+                <a href="/output/labor/utilization.aspx">
+                    <div class="menu-element-container"><span class="menu-element">Labor Utilization</span></div>
+                </a>
+                <a href="/output/equipment/utilization.aspx">
+                    <div class="menu-element-container"><span class="menu-element">Equipment Utilization</span></div>
+                </a>--%>
+                            </div>
+                            <script>
+                                var myHREF = window.location.href;
+
+
+                                if (myHREF.includes("input")) {
+                                    document.getElementById("toggler").value = "Input";
+                                    document.getElementById("menu-input").innerHTML = "<a href='/input/models/table.aspx'><div class='menu-element-container'><span class='menu-element'>Model</span></div ></a ><a href='/input/products/table.aspx'><div class='menu-element-container'><span class='menu-element'>Products</span></div></a><a href='/input/labor/table.aspx'><div class='menu-element-container'><span class='menu-element'>Labor</span></div></a><a href='/input/equipment/table.aspx'><div class='menu-element-container'><span class='menu-element'>Equipment</span></div></a>";
+                                    document.getElementById("menu-input").style.top = "0px";
+                                    document.getElementById("menu-output").innerHTML = "<a href='/output/products/time.aspx'><div class='menu-element-container'><span class='menu-element'>Lead-time</span></div></a><a href='/output/products/wip.aspx'><div class='menu-element-container'><span class='menu-element'>WIP</span></div></a><a href='/output/labor/utilization.aspx'><div class='menu-element-container'><span class='menu-element'>Labor Utilization</span></div></a><a href='/output/equipment/utilization.aspx'><div class='menu-element-container'><span class='menu-element'>Equipment Utilization</span></div></a>";
+                                    document.getElementById("menu-output").style.top = "100px";
+
+                                } else if (myHREF.includes("output")) {
+                                    document.getElementById("toggler").value = "Output";
+                                    document.getElementById("menu-output").style.top = "0x";
+                                    document.getElementById("menu-output").innerHTML = "<a href='/output/products/time.aspx'><div class='menu-element-container'><span class='menu-element'>Lead-time</span></div></a><a href='/output/products/wip.aspx'><div class='menu-element-container'><span class='menu-element'>WIP</span></div></a><a href='/output/labor/utilization.aspx'><div class='menu-element-container'><span class='menu-element'>Labor Utilization</span></div></a><a href='/output/equipment/utilization.aspx'><div class='menu-element-container'><span class='menu-element'>Equipment Utilization</span></div></a>";
+                                    document.getElementById("menu-input").innerHTML = "<a href='/input/models/table.aspx'><div class='menu-element-container'><span class='menu-element'>Model</span></div ></a ><a href='/input/products/table.aspx'><div class='menu-element-container'><span class='menu-element'>Products</span></div></a><a href='/input/labor/table.aspx'><div class='menu-element-container'><span class='menu-element'>Labor</span></div></a><a href='/input/equipment/table.aspx'><div class='menu-element-container'><span class='menu-element'>Equipment</span></div></a>";
+                                    document.getElementById("menu-input").style.top = "-100px";
+                                } else {
+                                    document.getElementById("toggler").value = "Input";
+                                    document.getElementById("menu-input").innerHTML = "<a href='/input/models/table.aspx'><div class='menu-element-container'><span class='menu-element'>Model</span></div ></a ><a href='/input/products/table.aspx'><div class='menu-element-container'><span class='menu-element'>Products</span></div></a><a href='/input/labor/table.aspx'><div class='menu-element-container'><span class='menu-element'>Labor</span></div></a><a href='/input/equipment/table.aspx'><div class='menu-element-container'><span class='menu-element'>Equipment</span></div></a>";
+                                    document.getElementById("menu-input").style.top = "0px";
+                                    document.getElementById("menu-output").innerHTML = "<a href='/output/products/time.aspx'><div class='menu-element-container'><span class='menu-element'>Lead-time</span></div></a><a href='/output/products/wip.aspx'><div class='menu-element-container'><span class='menu-element'>WIP</span></div></a><a href='/output/labor/utilization.aspx'><div class='menu-element-container'><span class='menu-element'>Labor Utilization</span></div></a><a href='/output/equipment/utilization.aspx'><div class='menu-element-container'><span class='menu-element'>Equipment Utilization</span></div></a>";
+                                    document.getElementById("menu-output").style.top = "100px";
+                                }
+
+                            </script>
+                        </div>
+                    </div>
+                </nav>
+                <div id="inner-header-dropdown">
+                    <select id="dropProduct" disabled="disabled">
+                        <option value="" selected disabled hidden>select a product</option>
+                    </select>
+                </div>
+                <script>
+                    $(function () {
+                        if (window.location.href.includes("products") && window.location.href.includes("input") && !window.location.href.includes("table")) {
+                            document.getElementById("dropProduct").innerHTML += document.getElementById("dropListProducts").innerHTML;
+                        }
+
+                    });
+                </script>
+
+                <div class="page-controls-container">
+                    <ul class="mnuDrop">
+                        <li>
+                            <a class="fas fa-ellipsis-v"></a>
+                            <ul id="page-control-content">
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+
+
+            </div>
+
+
+            <script>
+                function googleFilter() {
+
+                    //var tempHeight = document.querySelector(".inner-header").style.getPropertyValue("--header-height").trim();
+                    var tempPos = document.getElementById("filter").style.getPropertyValue("--header-pos").trim();
+
+                    if (tempPos === "-8vh") {
+
+                        document.getElementById("filter").style.setProperty("--header-pos", "" + 0);
+
+                    } else {
+
+                        document.getElementById("filter").style.setProperty("--header-pos", -8 + "vh");
+
+                    }
+
+                }
+
+                $(function () {
+                    document.addEventListener("mousedown", dealWithOpenFilter, false);
+                });
+
+                function dealWithOpenFilter(e) {
+                    if (e.which == 1) {
+                        var tempPos = document.getElementById("filter").style.getPropertyValue("--header-pos").trim();
+                        var $wrapper = $('#filter');
+                        var $wrapper2 = $('.goog-menu');
+                        var $target = $(e.target);
+
+                        //if (tempPos == 0) {
+                        //    if (e.target.id == "filter-button") {
+                        //        googleFilter();
+                        //    }
+                        //} else {
+
+                        //}
+
+                        if (e.target.id == "filter-button" && tempPos == "0") {
+                            googleFilter();
+                        } else if ((!$.contains($wrapper[0], $target[0]) && tempPos != "0") && ($target.parents(".goog-menu").length == 0 && $target[0].classList[0] != "goog-menu" && tempPos != "0")) {
+                            googleFilter();
+
+                        } else {
+
+                        }
+
+
+                    }
+                }
+            </script>
+        </div>
+        <div class="" id="filter" style="--header-pos: 0;">
+
+            <div id="filterContainer">
+                <%--  <div id="filter1-1"></div>
+                <div id="filter2-2"></div>--%>
+            </div>
+        </div>
+        <div id="drawer-click-off" style="visibility:hidden;"></div>
+    </header>
+
+
+
+
+    <main>
+
+
+        <form style="padding-top: 0px; margin-top: 0px; height: 100%;" id="mpxForm" method="post" onsubmit="if (pageLoaded) { ShowProgress();return true; } else {alert('The page has not yet fully loaded. Please wait.'); return false; }" runat="server">
+            <asp:ScriptManager ID="ScriptManager1" runat="server" />
+
+            <div style="box-shadow: none; min-height: 100%; height: 100%" class="page shadow">
+                <%# bodyInsert  %>
+
+                <div style="display: none;" class="header">
+
+                    <div style="float: right; text-align: right; margin-top: -5px; font-weight: bold; margin-right: 10px;">
+                        <div style="height: 35px; font-size: 13px; font-family: 'Roboto', Verdana;"><span style="color: #b9e0bb;">Build</span><span style="color: #f7b2b3;">-To-</span><span style="color: #b0c8e2;">Demand</span><span style="color: #d7d7d7;">, Inc.</span></div>
+                        <div>
+                            <asp:Label ID="Label1" runat="server" CssClass="userLabel"></asp:Label>
+                        </div>
+                    </div>
+                    <asp:Panel runat="server" ToolTip="A session expires after 30 minutes of inactivity, the reset button resets the timer.">
+                        <div style="margin-left: 1px; float: left;">
+                            <div class="countdown" id="timer_div">Logout Timer: 30 min 00 s</div>
+                        </div>
+                        <div style="margin-left: 7px; float: left; width: 27%; min-width: 100px;">
+                            <asp:LinkButton ID="btnResetCountdown" OnClientClick="return true;" CssClass="reset" Text="Reset" OnClick="btnResetCountdown_Click" runat="server"></asp:LinkButton>
+
+                        </div>
+                    </asp:Panel>
+
+                    <h1 class="mpxTitle">Value Stream Modeling</h1>
+
+                    <div class="line" style="clear: both;"></div>
+                </div>
+                <div class="content">
+
+
+
+
+                    <div style="display: none;" id="nav">
+                    </div>
+
+                    <div id="content_page">
+                        <div style="display: flex;" class="status">
+                            <asp:HiddenField ID="model" runat="server" />
+
+
+
+                        </div>
+                        <div style="display: flex;" class="status">
+                            <asp:HiddenField ID="model2" runat="server" />
+
+
+                        </div>
+                        <div style="display: none; float: right;">
+                        </div>
+
+
+
+
+
+
+
+
+                        <%# contentInsert %>
+                        <div id="content-injection">
+                            <%--NEED TO ADD STYLE TO THIS DIV--%>
+                            <asp:ContentPlaceHolder ID="ContentPlaceHolder1" runat="server">
+                            </asp:ContentPlaceHolder>
+
+                        </div>
+
+
+                    </div>
+
+                    <div id="pnlCalculating" class="pagePopup" onclick="" style="visibility: hidden;">
+                        <div id="pnlCalculatingMessage" class="popPanel" style="min-width: 25vw; visibility: hidden;">
+                            <div id="titleDiv" class="popHeader" style="display: flex;"><span class="popHeaderText" style="margin-right: auto; padding: 10px;">Calculations Complete</span></div>
+                            <div class="popMessage" style="display: flex; flex-direction: column;">
+
+                                <div id="progressDiv" style="margin: auto"></div>
+                                <div id="resultDiv" style="margin: auto"></div>
+                                <div id="buttonDiv" style="margin: 15px auto 0px auto;">
+                                    <asp:Button ClientIDMode="Static" ID="calcFakeOK" runat="server" OnClick="Unnamed_Click" CssClass="hidden" />
+                                    <input type="button" id="calcOK" value="OK" />
+                                </div>
+
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <asp:Timer ID="firstTimer" OnTick="timer_Tick" runat="server" Enabled="false" />
+
+                    <asp:Timer ID="secondTimer" OnTick="secondTimer_Tick" runat="server" Enabled="false" />
+
+                    <%--INACTIVE PANEL--%>
+                    <asp:Panel ID="pnlTimeout" CssClass="popPanel" Width="500" runat="server" Style="display: none">
+                        <div class="popHeader">
+                            <span class="popHeaderText">Inactive Warning</span>
+                        </div>
+                        <div class="popMessage">
+                            <span>You have been inactive for 12 minutes. If you don't respond you will be logged out in 2 minutes.</span>
+                        </div>
+                        <div class="popSubmit">
+                            <asp:Button ID="btnTimeoutRefresh" runat="server" Text="Back To Page" OnClick="btnRefresh_Click" />
+                            <asp:Button ID="btnTimeoutLogout" runat="server" Text="Logout" OnClick="btnLogout_Click" />
+                            <asp:Button ID="HiddenBtn" runat="server" Style="display: none;" />
+                        </div>
+                    </asp:Panel>
+
+
+                    <ajaxToolkit:ModalPopupExtender ID="modalExtender" runat="server"
+                        TargetControlID="firstTimer"
+                        PopupControlID="pnlTimeout"
+                        BehaviorID="timeoutBehavior"
+                        BackgroundCssClass="modalBackground"
+                        DropShadow="false">
+                    </ajaxToolkit:ModalPopupExtender>
+
+                    <%--TIMEOUT PANEL--%>
+                    <asp:Panel ID="pnlTimeout2" CssClass="popPanel" Width="500" runat="server" Style="display: none">
+                        <div class="popHeader">
+                            <span class="popHeaderText">Timeout</span>
+                        </div>
+                        <div class="popMessage">
+                            <span>You have been logged out from Value Stream Modeling</span>
+                        </div>
+                        <div class="popSubmit">
+                            <asp:Button ID="btnRedirect" runat="server" OnClick="btnRedirect_Click" Text="OK" Width="60" />
+                        </div>
+                    </asp:Panel>
+
+                    <ajaxToolkit:ModalPopupExtender ID="modalExtender2" runat="server"
+                        TargetControlID="secondTimer"
+                        PopupControlID="pnlTimeout2"
+                        BackgroundCssClass="modalBackground"
+                        DropShadow="false">
+                    </ajaxToolkit:ModalPopupExtender>
+
+                    <%--ERROR PANEL--%>
+                    <asp:Panel CssClass="popPanel" ID="pnlError" runat="server" Style="display: none">
+                        <div class="popHeader">
+                            <span class="popHeaderText">Error</span>
+                        </div>
+
+                        <div class="popMessage">
+                            <asp:Label ID="lblGeneralError" runat="server"></asp:Label>
+                        </div>
+
+                        <div class="popSubmit">
+                            <asp:Button Style="width: 60px;" ID="btnOkError" runat="server" Text="OK" OnClientClick="HidePopup('modalPopupBehavior'); return true;" />
+                        </div>
+
+                    </asp:Panel>
+
+                    <ajaxToolkit:ModalPopupExtender ID="modalExtenderError" runat="server"
+                        TargetControlID="modalDummy"
+                        PopupControlID="pnlError"
+                        BehaviorID="modalPopupBehavior"
+                        BackgroundCssClass="modalBackground"
+                        DropShadow="false">
+                    </ajaxToolkit:ModalPopupExtender>
+                    <div id="modalDummy" runat="server"></div>
+
+                    <%--MESSAGE PANEL--%>
+                    <asp:Panel ID="pnlMessage" CssClass="popPanel" Width="250" runat="server" Style="display: none">
+                        <div class="popHeader">
+                            <span class="popHeaderText">MESSAGE</span>
+                        </div>
+                        <div class="popMessage">
+                            <asp:Label ID="lblInfoMessage" runat="server"></asp:Label>
+                        </div>
+                        <div class="popSubmit">
+                            <asp:Button Style="width: 60px;" ID="btnMessageOk" runat="server" OnClientClick="HideMessagePopup(); return false;" Text="Ok" />
+                        </div>
+                    </asp:Panel>
+
+                    <ajaxToolkit:ModalPopupExtender ID="modalExtenderMessage" runat="server"
+                        TargetControlID="modalDummy2"
+                        PopupControlID="pnlMessage"
+                        BehaviorID="modalPopupMessageBehavior"
+                        BackgroundCssClass="modalBackground"
+                        DropShadow="false">
+                    </ajaxToolkit:ModalPopupExtender>
+                    <div id="modalDummy2" runat="server"></div>
+
+                    <%--MESSAGE POST???? NO CLUE--%>
+                    <asp:Panel ID="pnlMessagePost" CssClass="popPanel" Width="250" runat="server" Style="display: none">
+                        <div class="popHeader">
+                            <span class="popHeaderText">Message</span>
+                        </div>
+                        <div class="popMessage">
+                            <asp:Label ID="lblInfoMessagePost" runat="server"></asp:Label>
+                        </div>
+                        <div class="popSubmit">
+                            <asp:Button Style="width: 60px;" ID="btnOkMessagePost" runat="server" Text="Ok" OnClientClick="HidePopup('modalPopupMessagePostBehavior'); return true;" />
+                        </div>
+
+                    </asp:Panel>
+
+                    <ajaxToolkit:ModalPopupExtender ID="modalPopupInfoPost" runat="server"
+                        TargetControlID="modalDummy3"
+                        PopupControlID="pnlMessagePost"
+                        BehaviorID="modalPopupMessagePostBehavior"
+                        BackgroundCssClass="modalBackground"
+                        DropShadow="false">
+                    </ajaxToolkit:ModalPopupExtender>
+                    <div id="modalDummy3" runat="server"></div>
+
+
+                    <%--ERROR MESSAGE POST??? NO CLUE--%>
+                    <asp:Panel ID="pnlErrorMessagePost" CssClass="popPanel" Width="250" runat="server" Style="display: none">
+                        <div class="popHeader">
+                            <span class="popHeaderText">Error</span>
+                        </div>
+                        <div class="popMessage">
+                            <asp:Label ID="lblErrorMessagePost" runat="server"></asp:Label>
+                        </div>
+                        <div class="popSubmit">
+                        </div>
+                        <h3>Error Message</h3>
+                        <asp:Button Style="width: 60px;" ID="btnErrorMessagePostOk" runat="server" OnClientClick="HidePopup('modalPopupErrorMessageBehavior'); return true;" Text="Ok" />
+                    </asp:Panel>
+
+                    <ajaxToolkit:ModalPopupExtender ID="extenderErrorPost" runat="server"
+                        TargetControlID="modalDummy4"
+                        PopupControlID="pnlErrorMessagePost"
+                        BehaviorID="modalPopupErrorMessageBehavior"
+                        BackgroundCssClass="modalBackground"
+                        DropShadow="true">
+                    </ajaxToolkit:ModalPopupExtender>
+                    <div id="modalDummy4" runat="server"></div>
+
+
+                    <%--LOADING PANEL--%>
+                    <asp:Panel ID="pnlLoadingPopup" runat="server" CssClass="popPanel" Style="display: none">
+                        <div class="popMessage" style="background: rgb(255,165,0); text-align: left;">
+                            <span>Loading...</span>
+                        </div>
+
+                    </asp:Panel>
+
+                    <ajaxToolkit:ModalPopupExtender
+                        ID="mdlLoadingPopup" runat="server" TargetControlID="pnlLoadingPopup" BehaviorID="behLoadingPopup"
+                        PopupControlID="pnlLoadingPopup" DropShadow="false" BackgroundCssClass="modalBackground2" />
+                    <div class="clearfloat"></div>
+
+                    <%--My Panel for calculating in each page--%>
+
+                    <%--               <asp:Panel ID="pnlCalculating" runat="server" CssClass="pagePopup" Style="display: none;">
+                        <div class="popPanel" style="min-width: 25vw;">
+                            <div class="popMessage" style="display: flex;">
+                                <div id="progressDiv" style="margin: auto auto auto 0px"></div>
+                                <input id="btnCancelCalc" onclick="alert('you clicked me')" type="button" style="display: none; margin: auto 0px auto auto" value="CANCEL" />
+                            </div>
+
+
+
+                        </div>
+
+
+                    </asp:Panel>
+
+                    <ajaxToolkit:ModalPopupExtender ID="modalPopupLoading" runat="server"
+                        TargetControlID="pnlCalculating"
+                        PopupControlID="pnlCalculating"
+                        BehaviorID="modalPopupLoadingBehavior"
+                        
+                        BackgroundCssClass="modalBackground"
+                        DropShadow="true">
+                    </ajaxToolkit:ModalPopupExtender>--%>
+                    <%--                                          <div id="pnlCalculating" class="pagePopup" onclick="" style="visibility: hidden;">
+                <div id="pnlCalculatingMessage" class="popPanel" style="min-width: 25vw;">
+                    <div class="popMessage" style="display: flex; flex-direction: column;">
+                        <div id="progressDiv" style="margin: auto">Validating Data...</div>
+                        <div id="resultDiv" style="margin: auto"></div>
+                        <div id="buttonDiv" style="margin: auto;">
+                        
+                            <asp:Button ID="calcOK" OnClick="Unnamed_Click" runat="server" Text="OK" />
+                   
+                        </div>
+
+
+                    </div>
+                </div>
+            </div>--%>
+                </div>
+
+            </div>
+
+
+            <div style="display: none;" class="page footer">
+
+                <asp:Label ID="lblLastLogin" Text="Last Login: 5/12/2013 10:44:27 PM; Last Logout: Normal logout." runat="server" CssClass="footerUserInfo"></asp:Label><br />
+
+
+
+            </div>
+        </form>
+
+    </main>
+
+    <%--begin the footer--%>
+    <footer>
+
+        <div class="footer-wrapper">
+
+            <div class="left-menu hidden">
+
+                <label id="toggle-scenario" style="margin: auto 10px auto 0px;"><span class="fas fa-toggle-off fa-2x"></span></label>
+
+            </div>
+            <div class="label-container left-menu">
+
+                <div class="footer-div">
+
+                    <span style="font-weight: 500; color: rgb(34,36,111);">Model: </span>
+                    <asp:Label ID="lblModel" ToolTip="Current Value Stream Model" runat="server"></asp:Label>
+
+                </div>
+
+                <span class="footer-div">|</span>
+
+                <div class="footer-div">
+
+                    <span style="font-weight: 500; color: #3e93d8;">Scenario: </span>
+                    <asp:Label ID="lblCurrentWhatif" ToolTip="Current what-if" runat="server" Visible="false"></asp:Label>
+
+                </div>
+
+                <span class="footer-div">|</span>
+
+                <div class="footer-div">
+
+                    <span style="font-weight: 500; color: #0F65AC;">Analysis: </span>
+                    <asp:Label ID="lblCurrentAnalysis" ToolTip="Current analysis" runat="server" Visible="false"></asp:Label>
+
+                </div>
+            </div>
+
+
+            <div class="footer-div right-menu hidden">
+                <asp:Label ID="lblUser" runat="server"></asp:Label>
+<%--                <span>Factory Concepts, LLC. &copy; 2017</span>--%>
+                <%--INSERT LINK TO SOURCE REPO PAGE HERE OR TO A LICENSE PAGE--%>
+                                <span>Creative Commons NC 2018</span>
+
+
+            </div>
+
+        </div>
+
+    </footer>
+</body>
+
+
+</html>

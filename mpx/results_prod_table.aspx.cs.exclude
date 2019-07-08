@@ -1,0 +1,121 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.OleDb;
+using System.Drawing;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.DataVisualization.Charting;
+using System.Web.UI.WebControls;
+
+public partial class results_prod_table : ProductResultPage
+{
+    public results_prod_table() {
+        PAGENAME = "results_prod_table.aspx";
+        FIELDS = new string[] { "prodid", "Name", "Description", "TotalGoodProd", "ShippedProd", "GoodForAsmProd", "ScrapInAsm", "Scrap", "WIP", "FlowTime", "LTEquip", "LTLabor", "LTSetup", "LTRun", "LTWaitLot" };
+        HEADERS = new string[] { null, "Product Name", "What-If Scenario", "Total Good Product", "Shipped Product", "# For Good Assembly", "# Scrap In Asm", "# Scrapped in Production", "WIP", "MCT", "Time Waiting for Equip", "Time Waiting for Labor", "Time for Setup", "Time for Run", "Time Waiting for Rest of Lot" };
+        tableQueryString = " SELECT DISTINCTROW tblProdFore.ProdDesc AS Name, IIf([zstblwhatif].[display],[zstblwhatif].[name],'_skip') AS Description, tblRsProd.TotalGoodProd, tblRsProd.ShippedProd, tblRsProd.GoodForAsmProd, tblRsProd.ScrapInAsm, tblRsProd.Scrap, tblRsProd.WIP, tblRsProd.FlowTime, tblRsProd.LTEquip, tblRsProd.LTLabor, tblRsProd.LTSetup, tblRsProd.LTRun, tblRsProd.LTWaitLot, tblRsProd.LTWaitAsm, tblRsProd.ProdID, zstblwhatif.familyid, tblRsProd.WID "
+                          + " FROM zstblwhatif INNER JOIN (tblRsProd INNER JOIN tblProdFore ON tblRsProd.ProdID = tblProdFore.ProdID) ON zstblwhatif.WID = tblRsProd.WID"
+                          + " WHERE (((IIf([zstblwhatif].[display],[zstblwhatif].[name],'_skip' ))<>'_skip'))";
+
+
+        sortedTableName = "tblRsProd";
+        sortedTableNameGraph = "tblRsProd0";
+        sortedTableName2 = sortedTableNameGraph;
+
+        wantSort2 = true;
+
+        graphQueryString = "SELECT DISTINCTROW IIf([zstblwhatif].[display],[zstblwhatif].[name],'_skip') AS Description, zstblwhatif.WID, tblprodfore.ProdDesc, tblRsProd.TotalGoodProd, tblRsProd.ShippedProd, tblRsProd.ScrapInAsm, tblRsProd.Scrap, tblRsProd.GoodForAsmProd FROM (tblprodfore INNER JOIN tblRsProd ON tblprodfore.ProdID = tblRsProd.ProdID) INNER JOIN zstblwhatif ON tblRsProd.WID = zstblwhatif.WID WHERE (((IIf([zstblwhatif].[display],[zstblwhatif].[name],'_skip'))<>'_skip'))";
+        value = 0;
+
+        graphType = GraphType.STACKED_COLUMN;
+        DESC = new string[] { "description", "ProdDesc" };
+        FIELD_OFFSETS = new int[] { 3, 3 };
+
+        defaultSortString = "ORDER BY tblProdFore.ProdDesc, tblRsProd.WID";
+
+        COLORS = new string[] { "#85CF37", "#546787", "#C0200A", "#000000", "#FFADFF", "#B2B2B2" };
+
+        InitializeUnits();
+        for (int i=9; i<15; i++) {
+            UNITS[i] = true;
+        }
+    }
+
+    protected override string GetUnit(string field) {
+        string unit = "";
+        {
+            ClassB classB = new ClassB(GetDirectory() + userDir);
+            try {
+                if ((field.ToLower().IndexOf("flowtime")> -1) || (field.ToLower().IndexOf("lt")> -1)) {
+                    unit = classB.get_lead_time_unit();
+                }
+                unit = "[" + unit + "]";
+            } catch (Exception) { }
+        }
+        return unit;
+    }
+
+    protected void Page_Load(object sender, EventArgs e) {
+        base.Page_Load(sender, e);
+        if (Page.IsPostBack) {
+            Control postBackControl = GetPostBackControl(this.Page);
+            if (postBackControl.ID == null || (!postBackControl.ID.Equals(InputPageControls.BTN_OK_SORT) && !postBackControl.ID.Equals(InputPageControls.BTN_OK_SORT2))) {
+                this.SetGraphData();
+            }
+        }
+        if (!Page.IsPostBack) {
+            this.SetTableData();
+            this.SetGraphData();
+        }
+    }
+
+    protected override Control GetTabsDiv() {
+        return tabsDiv;
+    }
+
+    protected override Control GetMenuContainer() {
+        return pnlMenu;
+    }
+
+    protected override GridView getGridView() {
+        return grid;
+    }
+
+    protected override Chart getChart() {
+        return chart;
+    }
+
+    public override Panel GetSortPanelContainer() {
+        return sortPanelContainer;
+    }
+
+
+    public override Control GetSortButtonContainer() {
+        return buttondiv;
+    }
+
+    protected override Control GetSortButtonContainer2() {
+        return buttondivChart;
+    }
+
+    protected override Panel GetSortPanelContainer2() {
+        return sortPanelContainer2;
+    }
+
+    
+
+    protected override void RefreshData() {
+        base.RefreshData();
+        SetGraphData();
+    }
+
+    protected void SetGraphData() {
+        this.SetGraphData("Products", "Production Level", 5);
+    }
+
+    protected override Panel GetCopyTableContainer() {
+        return copyPanelContainer;
+    }
+}

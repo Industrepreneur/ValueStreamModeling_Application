@@ -1,0 +1,48 @@
+# https://www.npmjs.com/package/tslint 
+# please note that the json is auto-generated from this cson with 
+# cson2json tslint.cson > tslint.json
+pleaseNote: "This JSON file is autmatically generated. Please edit the CSON file."
+extends: ["tslint:recommended", "tslint-react"]
+defaultSeverity: 'warning'
+rules:
+  curly: true
+  'prefer-const': false
+  "no-consecutive-blank-lines": false
+  "semicolon": [true, "never"]
+  "quotemark": [true, "single", "avoid-escape", "jsx-single"]
+  "no-empty": false
+  "member-access": false
+  "member-ordering": false
+  "triple-equals": [true, "allow-null-check", "allow-undefined-check"]
+  "object-literal-key-quotes": [true, 'consistent']
+  "object-literal-sort-keys": false
+  'object-literal-shorthand': false
+  'ordered-imports': false
+  # temp disabled 
+  #"no-string-literal": false
+  "only-arrow-functions": false # will be true eventually
+  "max-line-length": false # will be set eventually
+  "max-classes-per-file": false # may be true eventrually
+  #"triple-equals": false
+  #"one-line": false
+  "comment-format": false
+  #"align": false
+  "variable-name": false
+  "one-line": [true, "check-catch", "check-finally", "check-else", "check-open-brace"]
+  #"ban-types": false
+  # just for this project
+  #"no-namespace": false 
+  #"no-reference": false
+  #"no-internal-module": false
+  #"no-console": false
+  #"one-variable-per-declaration": false
+  #"prefer-for-of": false
+  # tslint-react options
+  "jsx-no-multiline-js": false
+
+
+  
+
+
+
+  

@@ -1,0 +1,233 @@
+﻿<%@ Page Language="C#" AutoEventWireup="true" CodeFile="speciallog.aspx.cs" Inherits="speciallog" %>
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head id="Head1" runat="server">
+    <title>Value Stream Modeling</title>
+    <link href="mpxlogin.css" rel="stylesheet" type="text/css" />
+
+    <link id="Link2" rel="shortcut icon" type="image/x-icon" href="~/favicon.ico" />
+    <link id="Link1" runat="server" rel="icon" href="~/favicon.ico" type="image/ico" />
+
+    <script language="javascript" type="text/javascript">
+        function showHideMPXDetails() {
+            var divstyle = new String();
+            divstyle = document.getElementById("details").style.display;
+            if (divstyle.toLowerCase() == "block" || divstyle == "") {
+                document.getElementById("details").style.display = "none";
+                document.getElementById("btnDetails").innerText = "More about Value Stream Modeling";
+            }
+            else {
+                document.getElementById("details").style.display = "block";
+                document.getElementById("btnDetails").innerText = "Hide Value Stream Modeling details";
+            }
+            return false;
+        }
+
+        function HideErrorPopup(nameClientId) {
+            $find('errorBehavior').hide();
+            try {
+                eval("document.getElementById('" + nameClientId + "').focus()");
+            }
+            catch (err) {
+
+            }
+
+        }
+
+        function doFocus(buttonName, e) {
+            var key;
+
+            if (window.event)
+                key = window.event.keyCode;     //IE
+            else
+                key = e.which;     //firefox
+
+            if (key == 13) {
+                var btn = document.getElementById(buttonName);
+                if (btn != null && !btn.disabled) {
+                    btn.focus();
+                }
+            }
+        }
+
+        function doClick(buttonName, e) {
+            //the purpose of this function is to allow the enter key to 
+            //point to the correct button to click.
+            var key;
+
+            if (window.event)
+                key = window.event.keyCode;     //IE
+            else
+                key = e.which;     //firefox
+
+            if (key == 13) {
+                //Get the button the user wants to have clicked
+                var btn = document.getElementById(buttonName);
+                if (btn != null) { //If we find the button click it
+                    btn.click();
+                    if (window.event) {
+                        window.event.keyCode = 0;
+                    } else {
+                        e.which = 0;
+                    }
+
+                }
+            }
+        }
+
+
+    </script>
+</head>
+<body>
+    <form id="loginForm" method="post" runat="server">
+        <div class="header">
+            <h1>Welcome to Value Stream Modeling</h1>
+        </div>
+        <div class="leftPicture">
+            <img src="Images/manu_login2.png" style="width: 330px;" alt="manufacturing picture" />
+        </div>
+        <div class="mpxColumn">
+            <h2>About Value Stream Modeling</h2>
+            <div>Value Stream Modeling is a tool to help evaluate Manufacturing System Performance with an emphasis on estimating Operational Manufacturing Critical-path Times (e.g. lead time). The calculations start with basic data such as demand, capacity, lotsizes and operation setup and run times.</div>
+            <br />
+
+            <a id="btnDetails" onclick="showHideMPXDetails()">More about Value Stream Modeling</a>
+            <br />
+
+            <div id="details" style="display: none;">
+
+                <h3>Value Stream Modeling Purpose</h3>
+                <p>
+                    Value Stream Modeling software was developed for Operational Manufacturing Critical-path Time analysis and capacity planning. Value Stream Modeling enables companies to evaluate the impact of management decisions on their shop floor operations.  Using this technology managers and analysts can build computer-based models of their manufacturing operations with unprecedented speed (hours) and subsequently pose “what-if” questions with answers provided in seconds.  This is in sharp contrast to simulation alternatives employed by manufacturing organizations which require weeks/months of model development and computer execution times that vary from minutes to hours.  Users include managers and engineers with a focus on lead time reduction, resource allocation and manufacturing process improvement.  Value Stream Modeling is particularly useful in manufacturing operations where numerous configuration options negatively impact inventory and work-in-process costs.
+                </p>
+                <h4>Rapid Modeling Technology</h4>
+                <p>
+                    The rapid modeling technology (RMT) used by Value Stream Modeling is based on recent advances in mathematics such as reliability modeling and branches of engineering applied mathematics that are especially suited to the modeling and evaluation of the factory floor.  Embedded within Value Stream Modeling is a rapid modeling "engine" containing complex mathematical equations that capture the manufacturing system dynamics of the factory floor.  This sophisticated application reflects the knowledge and experience of the manufacturing experts who developed Value Stream Modeling.
+                </p>
+
+            </div>
+            <img src="Images/businessgraph_nowatermark.jpg" class="graphImage" width="200px" alt="business graph" />
+
+        </div>
+        <div class="pnlLogin">
+
+            <asp:ScriptManager ID="ScriptManager1" runat="server">
+            </asp:ScriptManager>
+            <div id="textbox1">
+                <h2>Login</h2>
+
+
+
+
+                <table>
+                    <tr>
+                        <td>
+                            <asp:Label
+                                ID="lblUsername"
+                                runat="server"
+                                Text="Username:">
+                
+                            </asp:Label>
+                        </td>
+                        <td>
+                            <asp:TextBox
+                                ID="txtUsername"
+                                runat="server"
+                                Height="17px"
+                                MaxLength="30"
+                                TabIndex="1"
+                                Rows="1"
+                                Width="170px">
+                            </asp:TextBox>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <asp:Label
+                                ID="lblPassword"
+                                runat="server"
+                                Text="Password:">
+                            </asp:Label>
+                        </td>
+
+                        <td>
+                            <asp:TextBox
+                                TextMode="Password"
+                                ID="txtPassword"
+                                MaxLength="30"
+                                Width="170px"
+                                TabIndex="2"
+                                runat="server">
+                            </asp:TextBox>
+                        </td>
+                    </tr>
+                </table>
+
+
+            </div>
+
+            <br />
+
+
+
+
+
+
+
+            <div style="clear: both;">
+                <asp:Button id="btnSubmit" TabIndex="3" style="font-size: 13px;" CssClass="buttonMain" OnClick="btnSubmit_Click" runat="server" Text="LOGIN" UseSubmitBehavior="false" />
+            </div>
+            <asp:HiddenField ID="hidden1" runat="server" Value="0"></asp:HiddenField>
+
+
+            <br />
+            <br />
+            <asp:Label
+                ID="lblError"
+                ForeColor="OrangeRed"
+                runat="server"
+                Text=""
+                Visible="false">
+            </asp:Label>
+            <br />
+
+            <ajaxToolkit:ModalPopupExtender ID="modalError" runat="server"
+                TargetControlID="dummy"
+                PopupControlID="pnlError"
+                BehaviorID="errorBehavior"
+                BackgroundCssClass="modalBackground"
+                DropShadow="true">
+            </ajaxToolkit:ModalPopupExtender>
+
+            <asp:Panel ID="pnlError" CssClass="errorPopPanel" runat="server">
+                <h3>Error Message</h3>
+                <asp:Label ID="lblErrorModal" Text="" runat="server"></asp:Label>
+                <br />
+                <br />
+
+                <asp:Button ID="btnOkError" runat="server" OnClientClick="HideErrorPopup();return false;" Text="Ok" Width="60" />
+
+
+            </asp:Panel>
+            <div runat="server" id="dummy"></div>
+        </div>
+
+        <br />
+        <div>
+            <p class="footmark">
+                <b>Value Stream Modeling</b>
+
+                <br />
+                &nbsp;&nbsp;
+            <br />
+                <b>E-mail:
+			<a href="mailto:info@build-to-demand.com">info@build-to-demand.com</a></b>
+                <br />
+                <b>Copyright &copy; 2013</b>
+            </p>
+        </div>
+    </form>
+</body>
+</html>

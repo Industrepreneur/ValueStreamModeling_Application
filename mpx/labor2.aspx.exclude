@@ -1,0 +1,130 @@
+﻿<%@ Page Title="" Language="C#" MasterPageFile="~/MasterPage.master" AutoEventWireup="true" CodeFile="labor2.aspx.cs" Inherits="Labor" %>
+<%@ Register TagPrefix="asp" Namespace="AjaxControlToolkit" Assembly="AjaxControlToolkit"%>
+<asp:Content ID="Content1" ContentPlaceHolderID="head" Runat="Server">
+</asp:Content>
+
+<asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" Runat="Server">
+
+
+
+<div class="datatable">
+    <asp:GridView 
+        ID="gridLabor" 
+        runat="server"   
+        AutoGenerateColumns="False" 
+        DataKeyNames="LaborID"
+        AllowSorting="true"
+        AllowPaging="true"
+        RowStyle-CssClass="datatable-rowstyle"
+        AlternatingRowStyle-BackColor="White"
+        HeaderStyle-BackColor="#ffa500"
+        FooterStyle-BackColor="#ffa500"
+        OnSorting="OnSorting"
+        OnPageIndexChanging="PageIndexChanging"
+        OnRowDataBound="Grid_RowDataBound"
+        OnRowCommand="grid_RowCommand"
+        Emptydatatext="There are no data records to display."
+        ShowFooter="true" >
+
+        <Columns>
+            <asp:TemplateField>
+                <ItemTemplate>
+
+                         <input id="btnInput" 
+                            value="Select"
+                            type="button"
+                            onclick="popupClick('<%# btnCancel.ClientID %>', '<%# Eval("LaborID") %>');" />
+
+                         
+                        
+                </ItemTemplate>
+                <EditItemTemplate>
+                    <asp:Button runat="server" ID="btnUpdate" Text="Update" OnClick="RowUpdate" />
+                    <asp:Button runat="server" ID="btnCanc" Text="Cancel" OnClick="RowUpdateCancel"/>
+                </EditItemTemplate>
+                <FooterTemplate>
+                    <asp:Button ID="btnInsert" runat="server" Text="Insert" CommandName="Insert" />
+                </FooterTemplate>
+            </asp:TemplateField>
+            <asp:TemplateField HeaderText="Labor Description" SortExpression="LaborDesc">
+                <ItemTemplate>
+                    <asp:Label ID="lblLaborDesc" runat="server" Text='<%# Bind("LaborDesc") %>' />
+                </ItemTemplate>
+                <EditItemTemplate>
+                    <asp:TextBox ID="txtLaborDesc" TabIndex="1" runat="server" Text='<%# Bind("LaborDesc") %>' />
+                </EditItemTemplate>
+                <FooterTemplate>
+                    <asp:TextBox ID="txtLaborDesc" TabIndex="1" runat="server" />
+                </FooterTemplate>
+            </asp:TemplateField> 
+            <asp:TemplateField HeaderText="Labor Dept." SortExpression="LaborDept">
+                <ItemTemplate>
+                   <asp:Label ID="lblLaborDept" runat="server" Text='<%# Bind("LaborDept") %>' />
+                </ItemTemplate>
+                <EditItemTemplate>
+                    <asp:TextBox ID="txtLaborDept" TabIndex="2" runat="server" Text='<%# Bind("LaborDept") %>' />
+                </EditItemTemplate>
+                <FooterTemplate>
+                    <asp:TextBox ID="txtLaborDept" TabIndex="2" runat="server" />
+                </FooterTemplate>
+            </asp:TemplateField>
+            <asp:TemplateField HeaderText="Group Size" SortExpression="GrpSiz">
+                <ItemTemplate>
+                    <asp:Label ID="lblGrpSiz" runat="server" Text='<%# Bind("GrpSiz") %>' />
+                </ItemTemplate>
+                <EditItemTemplate>
+                    <asp:TextBox ID="txtGrpSiz" TabIndex="3" runat="server" Text='<%# Bind("GrpSiz") %>' />
+                </EditItemTemplate>
+                <FooterTemplate>
+                    <asp:TextBox ID="txtGrpSiz" TabIndex="3" runat="server" />
+                </FooterTemplate>
+            </asp:TemplateField>
+
+           
+        </Columns>
+
+    </asp:GridView>
+    
+    
+
+    <asp:Label ID="lblRad" runat="server" ></asp:Label>
+    <asp:Label ID="lblMessage" runat="server" />
+
+    <asp:Panel ID="pnlModal" CssClass="popPanel" runat="server">
+        <asp:Label ID="myLabel" runat="server" Text="Choose what you want to do with the row:"></asp:Label>
+        <br />
+        <br />
+        
+
+        <asp:RadioButton ID="rdbtnEdit" Text="Edit" GroupName="modalGroup" runat="server" /> <br />
+        <asp:RadioButton ID="rdbtnCopy" Text="Copy" GroupName="modalGroup" runat="server" /> <br />
+        <asp:RadioButton ID="rdbtnDelete" Text="Delete" GroupName="modalGroup" runat="server" /> <br />
+
+        <br />
+        <br />
+
+        <asp:Button ID="btnOk" runat="server" Text="Ok" OnClick="btnOk_Click"  />
+        <asp:Button ID="btnCancel" runat="server" Text="Cancel" />
+    </asp:Panel>
+</div>
+    
+<div>
+    <asp:ScriptManagerProxy ID="ScriptManagerProxy1" runat="server"></asp:ScriptManagerProxy>
+    <ajaxToolkit:ModalPopupExtender ID="MPE" runat="server"
+        TargetControlID="btnDummy"
+        PopupControlID="pnlModal"
+        BehaviorID="popupBehavior"
+        BackgroundCssClass="modalBackground"
+        DropShadow="true" 
+        OkControlID="btnOk" 
+        CancelControlID="btnCancel"
+     >
+        
+    </ajaxToolkit:ModalPopupExtender>
+    <asp:LinkButton runat="server" ID="btnDummy" />
+    <input type="hidden" id="selectedRowId" name="selectedRowId" />
+    <asp:Label runat="server" ID="lblRow" Visible="false" />
+</div>
+
+</asp:Content>
+

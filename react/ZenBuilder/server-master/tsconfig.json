@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES6",
+    "moduleResolution": "node",
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "importHelpers": true,
+    "allowSyntheticDefaultImports": true,
+    "sourceMap": true,
+    "noEmit": false,
+    "noImplicitAny": false,
+    "removeComments": false,
+    "preserveConstEnums": true,
+    "experimentalDecorators": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "pretty": true,
+    "jsx": "react",
+    "outDir": "./lib/",
+    "baseUrl": "."
+  },
+  "include": ["serverMaster.ts"],
+  "exclude": ["node_modules"]
+}

@@ -1,0 +1,330 @@
+﻿body {
+    width: 100%;
+    margin: 0px;
+    position: absolute;
+    height: 100%;
+    background: #eaedf1;
+    font-family: 'Roboto', sans-serif;
+    color: rgba(0, 0, 0, 0.54);
+    font-size: 100%;
+    user-select:none;
+}
+
+header img {
+ 
+
+    display: block;
+    max-height: 100%;
+    max-width: 100%;
+
+}
+
+
+
+footer {
+    text-align: center;
+    font-family: 'Roboto', sans-serif;
+    color: rgba(0, 0, 0, 0.54);
+    top: 95%;
+    height: 5%;
+    width: 100%;
+    position: absolute;
+    display:table;
+    font-size: 1.5vh;
+}
+
+div#footer-copyright {
+    margin-left: auto;
+    margin-right: auto;
+    display: table-cell;
+    vertical-align: middle;
+}
+
+header {
+    height: 5%;
+    min-width: 100%;
+    top: 0%;
+    background: rgb(34,36,111);
+    position: absolute;
+    display: flex;
+}
+
+.login-box {
+    display: block;
+    max-width: 33%;
+    min-width: 300px;
+    
+    margin-right: auto;
+    margin-top: auto;
+    margin-bottom: auto;
+    margin-left: auto;
+    background: white;
+    box-shadow: 0 2px 4px -1px rgba(0,0,0,.14), 0 4px 5px 0 rgba(0,0,0,.098), 0 1px 10px 0 rgba(0,0,0,.084);
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
+
+
+.login-body{
+padding: 15px 25px 15px 25px;
+/*height: 100%;*/
+}
+
+div#login-text{
+    /*height:45%;*/
+    margin-top:auto;
+    margin-bottom:10px;
+}
+
+span#lblUsername, span#lblPassword {
+    font-size:1.5em;
+}
+
+input#txtUsername, input#txtPassword {
+    color: rgba(0, 0, 0, 0.54);
+    border-top: none;
+    border-right: none;
+    border-left: none;
+    border-bottom: solid rgba(0, 0, 0, 0.1);
+    transition: all 0.3s linear;
+    Height: 17px;
+    width: 100%;
+    font-size: 100%;
+}
+
+input#txtUsername::-webkit-input-placeholder, input#txtPassword::-webkit-input-placeholder {
+        color: rgba(0, 0, 0, 0.54);
+        font-size: 100%;
+        transition: all 0.3s linear;
+        opacity: 1;
+}
+
+input#txtUsername:focus, input#txtPassword:focus {
+        border-top: none;
+        border-right: none;
+        border-left: none;
+        border-bottom: solid navy;
+        outline: none;
+        transition: all 0.3s linear;
+}
+
+label#lblUsername, label#lblPassword {
+    transition: all 0.3s linear;
+    color: rgba(0, 0, 0, 0.54);
+    font-size:75%;
+}
+
+label#lblUsername:focus, label#lblPassword:focus {
+    transition: all 0.3s linear;
+    color: navy;
+}
+
+table#user-table, table#password-table {
+    width: 100%;
+}
+
+div#login-user{
+   
+    width:100%;
+    margin-top: 0px;
+    padding-top:0px;
+    padding-bottom:15px;
+    margin-bottom: 0px;
+}
+
+.login-password {
+
+    width: 100%;
+    margin-top: 0px;
+    padding-top: 0px;
+    margin-bottom: 0px;
+}
+
+div#login-security{
+    min-height:5%;
+    display:flex;
+    margin-top:auto;
+    margin-bottom:10px;
+    
+
+}
+
+div#login-error {
+    min-height:1em;
+    margin-bottom: 10px;
+    font-size: 0.75em;
+    color: orangered;
+    display: block;
+}
+
+.login-submit {
+    min-height: 5%;
+    width: 100%;
+    display:block;
+}
+
+.login-header {
+    background: -webkit-gradient(linear, left bottom, left top, color-stop(0, #cccccc), color-stop(1, #ffffff)) !important;
+    background-color: rgb(238,238,238);
+    display: block;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
+
+.login-header-text {
+    padding: 15px 25px 15px 25px;
+    display: block;
+    font-weight: 300;
+    text-transform:uppercase;
+    color: rgba(0, 0, 0, 0.54);
+    font-size: 2em;
+    margin-top:auto;
+    margin-bottom:auto;
+    font-family: 'Roboto', sans-serif;
+}
+
+main{
+    display:flex;
+    height:90%;
+    width:100%;
+    top:5%;
+    position:absolute;
+}
+
+.first-one-third {
+    grid-column: 1/3;
+    grid-row: 1;
+}
+
+.second-one-third {
+    grid-column: 2/3;
+    grid-row: 1;
+}
+
+.last-one-third {
+    grid-column: 3/3;
+    grid-row: 1;
+}
+
+.main-content {
+    display: grid;
+    /*grid-template-columns: repeat(3,1fr);*/
+    grid-auto-rows: minmax(100px,auto);
+}
+
+h1
+{
+    padding-top: 10px;
+    padding-bottom: 10px;
+    margin-left: 0px;
+    margin-right: 0px;
+    color: #B3CFF7;
+    text-align: center;
+}
+
+h2
+{
+    font-style: italic;
+    color: white;
+    padding-left: 10px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    background-color: #637FA7;
+    /* IE9 SVG, needs conditional override of 'filter' to 'none' */
+    background: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiA/Pgo8c3ZnIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgdmlld0JveD0iMCAwIDEgMSIgcHJlc2VydmVBc3BlY3RSYXRpbz0ibm9uZSI+CiAgPGxpbmVhckdyYWRpZW50IGlkPSJncmFkLXVjZ2ctZ2VuZXJhdGVkIiBncmFkaWVudFVuaXRzPSJ1c2VyU3BhY2VPblVzZSIgeDE9IjAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiPgogICAgPHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iIzYzN2ZhNyIgc3RvcC1vcGFjaXR5PSIxIi8+CiAgICA8c3RvcCBvZmZzZXQ9IjEwMCUiIHN0b3AtY29sb3I9IiM3MzhmYjciIHN0b3Atb3BhY2l0eT0iMSIvPgogIDwvbGluZWFyR3JhZGllbnQ+CiAgPHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjEiIGhlaWdodD0iMSIgZmlsbD0idXJsKCNncmFkLXVjZ2ctZ2VuZXJhdGVkKSIgLz4KPC9zdmc+);
+    background: -moz-linear-gradient(top, #637fa7 0%, #738fb7 100%); /* FF3.6+ */
+    background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#637fa7), color-stop(100%,#738fb7)); /* Chrome,Safari4+ */
+    background: -webkit-linear-gradient(top, #637fa7 0%,#738fb7 100%); /* Chrome10+,Safari5.1+ */
+    background: -o-linear-gradient(top, #637fa7 0%,#738fb7 100%); /* Opera 11.10+ */
+    background: -ms-linear-gradient(top, #637fa7 0%,#738fb7 100%); /* IE10+ */
+    background: linear-gradient(to bottom, #637fa7 0%,#738fb7 100%); /* W3C */
+    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#637fa7', endColorstr='#738fb7',GradientType=0 ); /* IE6-8 */
+}
+
+h3, h4
+{
+    font-style: italic;
+    color: #637FA7;
+}
+
+a#btnForgotPw {
+    color: #337ab7;
+    text-decoration: none;
+    cursor: pointer;
+    font-size: 0.75em;
+   
+}
+
+a#btnForgotPw:hover {
+        color: #23527c;
+        text-decoration: underline;
+        cursor: pointer;
+}
+
+.lblErrorVis {
+    visibility:visible;
+    display:block;
+   
+}
+
+.lblErrorHidden {
+    visibility: hidden;
+    display: block;
+}
+
+button#btnSubmit {
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    padding: 10px;
+    background-color: white;
+    font-weight: 500;
+    border: none;
+    text-transform: uppercase;
+    font-family: 'Roboto', sans-serif;
+    font-size: 1em;
+    color: navy;
+    border-radius: 4px;
+}
+.headerLeft {
+    float: left;
+    margin-left: 1%;
+    margin-right: auto;
+}
+.headerRight {
+    float: right;
+    margin-right: 10px;
+    margin-left: auto;
+    margin-top: auto;
+    margin-bottom: auto;
+   
+}
+button#btnDonate {
+    display: block;
+    background-color: unset;
+    font-weight: 300;
+    border: none;
+    text-transform: uppercase;
+    font-family: 'Roboto', sans-serif;
+    font-size: 1.25vw;
+    color: white;
+    border-radius: 0.75vh;
+    transition: all 0.15s linear;
+}
+    button#btnDonate:hover, button#btnDonate:focus {
+        background-color: rgb(255,165,0);
+        outline:none;
+        cursor:pointer;
+    }
+
+button#btnSubmit:hover, button#btnSubmit:focus {
+        background-color: rgba(158,158,158,0.2);
+        outline:none;
+        cursor:pointer;
+}
+
+button#btnSubmit:disabled {
+        color: rgba(0, 0, 0, 0.54);
+        background-color: white;
+        cursor:not-allowed;
+}

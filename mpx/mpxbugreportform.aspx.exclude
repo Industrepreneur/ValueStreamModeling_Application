@@ -1,0 +1,195 @@
+﻿<%@ Page Language="C#" AutoEventWireup="true" CodeFile="mpxbugreportform.aspx.cs" Inherits="_Default" %>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head id="Head1" runat="server">
+    <title>MPX Demo Download</title>
+    <link href="formstyle.css" rel="stylesheet" type="text/css" />
+    <link href='http://fonts.googleapis.com/css?family=Roboto:500,400' rel='stylesheet' type='text/css' />
+    <link href='http://fonts.googleapis.com/css?family=Roboto+Condensed:400,300' rel='stylesheet' type='text/css' />
+    <link href='http://fonts.googleapis.com/css?family=Droid+Serif' rel='stylesheet' type='text/css' />
+    <script type="text/javascript">
+ 
+    </script>
+    <style type="text/css">
+        #TextArea1 {
+            height: 62px;
+            width: 229px;
+        }
+        .auto-style1 {
+            width: 278px;
+        }
+        #htmlTxDescription {
+            width: 441px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page shadow">
+        <form id="form1" runat="server">
+            <div class="content">
+
+                <img class="logo" src="images/logo.png" alt="logo" />
+                <div style="float: right; height: 30px; font-size: 18px; font-weight: bold; margin-right: 10px; font-family: 'Roboto', Verdana;"><span style="color: #b9e0bb;">Build</span><span style="color: #f7b2b3;">-To-</span><span style="color: #b0c8e2;">Demand</span><span style="color: #d7d7d7;">, Inc.</span></div>
+
+                <div class="greenLine"></div>
+                <div class="innerContent">
+                    <h1>MPX Download Demonstration</h1>
+
+                    <p>
+                        <b>Please provide the following information.</b>
+
+
+                        Asterisk (*) indicates field is required.
+                
+                    The information is for further contact only. It will 
+        not be used for any other <span style="font-family: Times New Roman">commercial 
+        purpose.</span>
+                    </p>
+
+
+                    <table>
+                        <tr>
+                            <td class="auto-style1">
+                                <asp:Label class="label" ID="lbl1" runat="server" Text="* Date"></asp:Label>
+                            </td>
+                            <td>
+                                <asp:DropDownList ID="ddlMonth" runat="server" >
+                                    <asp:ListItem>January</asp:ListItem>
+                                    <asp:ListItem>Feburary</asp:ListItem>
+                                    <asp:ListItem>March</asp:ListItem>
+                                    <asp:ListItem>April</asp:ListItem>
+                                    <asp:ListItem>May</asp:ListItem>
+                                    <asp:ListItem>June</asp:ListItem>
+                                    <asp:ListItem>July</asp:ListItem>
+                                    <asp:ListItem>August</asp:ListItem>
+                                    <asp:ListItem>September</asp:ListItem>
+                                    <asp:ListItem>October</asp:ListItem>
+                                    <asp:ListItem>November</asp:ListItem>
+                                    <asp:ListItem>December</asp:ListItem>
+                                </asp:DropDownList>
+                                <asp:DropDownList ID="ddlDay" runat="server">
+                                    <asp:ListItem>1</asp:ListItem>
+                                    <asp:ListItem>2</asp:ListItem>
+                                    <asp:ListItem>3</asp:ListItem>
+                                    <asp:ListItem>4</asp:ListItem>
+                                    <asp:ListItem>5</asp:ListItem>
+                                    <asp:ListItem>6</asp:ListItem>
+                                    <asp:ListItem>7</asp:ListItem>
+                                    <asp:ListItem>8</asp:ListItem>
+                                    <asp:ListItem>9</asp:ListItem>
+                                    <asp:ListItem>10</asp:ListItem>
+                                    <asp:ListItem>11</asp:ListItem>
+                                    <asp:ListItem>12</asp:ListItem>
+                                    <asp:ListItem>13</asp:ListItem>
+                                    <asp:ListItem>14</asp:ListItem>
+                                    <asp:ListItem>15</asp:ListItem>
+                                    <asp:ListItem>16</asp:ListItem>
+                                    <asp:ListItem>17</asp:ListItem>
+                                    <asp:ListItem>18</asp:ListItem>
+                                    <asp:ListItem>19</asp:ListItem>
+                                    <asp:ListItem>20</asp:ListItem>
+                                    <asp:ListItem>21</asp:ListItem>
+                                    <asp:ListItem>22</asp:ListItem>
+                                    <asp:ListItem>23</asp:ListItem>
+                                    <asp:ListItem>24</asp:ListItem>
+                                    <asp:ListItem>25</asp:ListItem>
+                                    <asp:ListItem>26</asp:ListItem>
+                                    <asp:ListItem>27</asp:ListItem>
+                                    <asp:ListItem>28</asp:ListItem>
+                                    <asp:ListItem>29</asp:ListItem>
+                                    <asp:ListItem>30</asp:ListItem>
+                                    <asp:ListItem>31</asp:ListItem>
+                                </asp:DropDownList>
+                                <asp:TextBox ID="txYear" runat="server" Width="95px"></asp:TextBox>
+                                <asp:RequiredFieldValidator ID="RequiredFieldValidator1" runat="server" ControlToValidate="txYear" ErrorMessage="Date name is required."></asp:RequiredFieldValidator>
+
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="auto-style1">
+                                <asp:Label class="label" ID="Label1" runat="server" Text="* Your Name"></asp:Label>
+                            </td>
+                            <td>
+                                <asp:TextBox ID="txName" CssClass="val" runat="server" Width="200px" MaxLength="200"></asp:TextBox>
+                                <asp:RequiredFieldValidator ID="RequiredFieldValidator2" runat="server" ControlToValidate="txName" ErrorMessage="Last name is required." Width="200"></asp:RequiredFieldValidator>
+
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="auto-style1">
+                                <asp:Label class="label" ID="Label2" runat="server" Text="* Your VSM Account"></asp:Label>
+                            </td>
+                            <td>
+                                <asp:TextBox ID="txAccount" runat="server" Width="200px" MaxLength="200"></asp:TextBox>
+                            </td>
+
+                        </tr>
+                        <tr>
+                            <td class="auto-style1">
+                                <asp:Label class="label" ID="Label6" runat="server" Text="* Your Email Address"></asp:Label>
+                            </td>
+                            <td>
+                                <asp:TextBox ID="txEmail" runat="server" Width="200px" MaxLength="200"></asp:TextBox>
+                            </td>
+
+                        </tr>
+                        <tr>
+                            <td class="auto-style1">
+                                <asp:Label class="label" ID="Label3" runat="server" Text="Affected Model"></asp:Label>
+                            </td>
+                            <td>
+                                <asp:TextBox ID="txModel" CssClass="val" runat="server" Width="341px" MaxLength="200"></asp:TextBox>
+                                <asp:RequiredFieldValidator ID="RequiredFieldValidator3" runat="server" ControlToValidate="txModel" ErrorMessage="Model is required."></asp:RequiredFieldValidator>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="auto-style1">
+                                <asp:Label class="label" ID="Label4" runat="server" Text="Affected Section of Program"></asp:Label>
+                            </td>
+                            <td>
+                                <asp:TextBox ID="txSection" CssClass="val" runat="server" Width="200px" MaxLength="200"></asp:TextBox>
+                                <asp:RequiredFieldValidator ID="RequiredFieldValidator4" runat="server" ControlToValidate="txSection" ErrorMessage="Phone number is required."></asp:RequiredFieldValidator>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td class="auto-style1">
+                                <asp:Label CssClass="label" ID="Label5" runat="server" 
+                                    Text="Description of the problem ................................................  paste screen here" Height="207px"></asp:Label>
+                                     <asp:Label CssClass="label" ID="Label7" runat="server" 
+                                    Text="  paste screen here" Height="207px"></asp:Label>
+                            </td>
+                            <td>
+                                <asp:TextBox ID="TextBox1" runat="server" Height="169px" Width="474px"></asp:TextBox>
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td class="auto-style1">
+                                <asp:Label class="label" ID="lblScreenshot" runat="server" Text="Screenshot"></asp:Label>
+                            </td>
+                            <td>
+                                <asp:FileUpload ID="fileUpScreenshot" runat="server" />
+                            </td>
+                        </tr>
+                        </table>
+
+                    <div class="buttonDiv">
+                        <asp:LinkButton ID="Submit" CssClass="buttonMain" runat="server" Height="20px" Text="SUBMIT" OnClick="submit_click" />
+                        <asp:LinkButton ID="ClearInput" CssClass="buttonMain" runat="server" Height="20px" Text="CLEAR INPUT" OnClick="clear_click" />
+                        <a href="http://www.build-to-demand.com/mpx.php">Back to MPX Value Stream Modeling</a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="page footer">
+        E-mail: <a href="mailto:Info@Build-To-Demand.com">Info@Build-To-Demand.com</a>
+        <br />
+        Copyright &copy; 2013  Build-To-Demand, Inc.
+    </div>
+</body>
+</html>
+

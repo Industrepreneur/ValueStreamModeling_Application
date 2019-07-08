@@ -1,0 +1,122 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.DataVisualization.Charting;
+using System.Web.UI.WebControls;
+
+public partial class results_labor_oper1 : LaborResultPage
+{
+   public results_labor_oper1() {
+        PAGENAME = "results_labor_oper1.aspx";
+        FIELDS = new string[] { "ProdDesc", "description", "ProdDesc", "OpNam", "OpNum", "LaborDesc", "EquipDesc", "eqsettime", "eqruntime", "labSetTime", "labRunTime", "FlowTime", "WIP", "VisitsPer100", "VisitsPerGood", "NumSetups", "AverLotSize", "LTEquip", "LTLabor", "LTSetup", "LTRun", "LTWaitLot", "l_set_hours", "l_run_hours", "e_set_hours", "e_run_hours" };
+        HEADERS = new string[] { null, "What-If Scenario", "Product name", "Oper Name", "Oper Num", "Labor Name", "Equip Name", "% used for Equip Setup", "% used for Equip Run", "% used for Labor Setup", "% used for Labor Run", "MCT at oper", "WIP", "Visits Per 100 good pieces", "Visits a Good piece makes", "# Setups", "Avg Lot Size", "Wait for Equip", "Wait for Labor", "Time in Setup", "Time for Run", "Wait for rest of Lot", "Labor Setup ", "Labor Run ", "Equip Setup ", "Equip Run " }; // UNITS!!!
+        
+        
+
+        defaultSortString = " ORDER BY tblProdFore.ProdDesc, tblOper.OpNum, tblRsOper.WID, tblLabor.LaborDesc, tblEquip.EquipDesc, IIf([zstblwhatif].[display],[zstblwhatif].[name],'skip')";
+        sortedTableName = "tblRsOper_D1Lab";
+        value = 2;
+
+        InitializeUnits();
+        UNITS[11] = true;
+        for (int i=17; i< UNITS.Length; i++) {
+            UNITS[i] = true;
+        }
+        
+    }
+
+    protected void Page_Load(object sender, EventArgs e) {
+        base.Page_Load(sender, e);
+        if (dropListLabor.Items.Count > 0) {
+            if (dropListLabor.SelectedItem == null) {
+                dropListLabor.SelectedIndex = 0;
+            }
+        }
+
+        if (!Page.IsPostBack) {
+            SetGraphQueryString(dropListLabor.SelectedValue);
+            this.SetTableData();
+            
+            
+        }
+    }
+
+    protected void SetGraphQueryString(string id) {
+        tableQueryString = "SELECT zstblwhatif.familyid, tblProdFore.ProdDesc, tblProdFore.ProdID, tblOper.OpNam, IIf(tblRsOper.WID=0,'Base Case','What-If Scenario') AS WID, tblOper.OpNum, tblLabor.LaborDesc, tblEquip.EquipDesc, tblRsOper.EqSetTime AS eqsettime, tblRsOper.EqRunTime AS eqruntime, tblRsOper.LabSetTime AS labSetTime, tblRsOper.LabRunTime AS labRunTime, tblRsOper.FlowTime, tblRsOper.WIP, tblRsOper.VisitsPer100, tblRsOper.VisitsPerGood, tblRsOper.NumSetups, tblRsOper.AverLotSize,  tblRsOper.LTEquip, tblRsOper.LTLabor, tblRsOper.LTSetup, tblRsOper.LTRun, tblRsOper.LTWaitLot, [zstblwhatif].[name], IIf([zstblwhatif].[display],[zstblwhatif].[name],'_skip') AS description, tblRsOper.e_run_hours, tblRsOper.l_run_hours, tblRsOper.l_set_hours, tblRsOper.e_set_hours, tblRsOper.WID"
+                         + " FROM ((((tblProdFore INNER JOIN tblOper ON tblProdFore.ProdID = tblOper.ProdFore) INNER JOIN tblEquip ON tblOper.EqID = tblEquip.EquipID) INNER JOIN tblLabor ON tblEquip.Labor = tblLabor.LaborID) INNER JOIN tblRsOper ON (tblOper.OpID = tblRsOper.OpID) AND (tblProdFore.ProdID = tblRsOper.ProdID)) INNER JOIN zstblwhatif ON tblRsOper.WID = zstblwhatif.WID"
+                         + " WHERE (((tblOper.OpNam)<>'dock' And (tblOper.OpNam)<>'STOCK' And (tblOper.OpNam)<>'SCRAP') AND ((IIf([zstblwhatif].[display],[zstblwhatif].[name],\"_skip\"))<>\"_skip\")) AND ((tblLabor.LaborID)=" + id + ")";
+    }
+
+    protected override GridView getGridView() {
+        return grid;
+    }
+
+    protected override Chart getChart() {
+        return null;
+    }
+
+    public override Panel GetSortPanelContainer() {
+        return sortPanelContainer;
+    }
+
+
+    public override Control GetSortButtonContainer() {
+        return buttondiv;
+    }
+
+    //protected override Control GetMenuContainer() {
+    //    return pnlMenu;
+    //}
+
+    //protected override Control GetTabsDiv() {
+    //    return tabsDiv;
+    //}
+    protected void dropListLabor_SelectedIndexChanged(object sender, EventArgs e) {
+        
+        grid.PageIndex = 0;
+        RefreshData();
+        
+    }
+
+    protected override void OnInit(EventArgs e) {
+        base.OnInit(e);
+        if (!LocalTablesLinked()) {
+            ResetModelGoToModels();
+        }
+        string dataFile = GetDirectory() + userDir + MAIN_USER_DATABASE;
+        srcLaborList.DataFile = dataFile;
+        dropListLabor.DataBind();
+        grid.EmptyDataText = "There are no results for this labor group.";
+
+    }
+
+    protected override void RefreshData() {
+        SetGraphQueryString(dropListLabor.SelectedValue);
+        base.RefreshData();
+    }
+
+    protected override Panel GetCopyTableContainer() {
+        return copyPanelContainer;
+    }
+
+    protected override string GetUnit(string field) {
+        string unit = "";
+        {
+            ClassB classB = new ClassB(GetDirectory() + userDir);
+            try {
+                unit = classB.get_op_time_unit();
+                unit = "[" + unit + "]";
+            } catch (Exception) { }
+        }
+        return unit;
+    }
+
+    protected override bool LocalTablesLinked() {
+        if (!UpdateSql("SELECT LaborID FROM tblLabor;")) {
+            return false;
+        }
+        return true;
+    }
+}

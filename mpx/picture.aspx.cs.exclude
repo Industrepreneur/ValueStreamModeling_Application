@@ -1,0 +1,30 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+
+public partial class picture : DbPage {
+
+    IbomTree tree;
+
+    public picture() {
+        PAGENAME = "picture.aspx";
+    }
+
+    protected void Page_Load(object sender, EventArgs e) {
+        base.Page_Load(sender, e);
+    }
+
+    protected void btnPicture_Click(object sender, EventArgs e) {
+        string pictureName = "tree.jpg";
+        // create an IbomTree object with the full path (needed to be able to save the picture) and relative path in the website (for image source attribute)
+        tree = new IbomTree(GetDirectory() + userDir + "\\" + pictureName, userDir + "/" + pictureName);
+        tree.Draw();
+        
+        LiteralControl lit = new LiteralControl("<img src=\"" + tree.imgsource + "\" alt=\"picture_there\" />");
+        pictureHolder.Controls.Add(lit);
+        
+    }
+}

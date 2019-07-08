@@ -1,0 +1,241 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Configuration;
+using System.IO;
+using System.Linq;
+using System.Net.Mail;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+
+public partial class mpxdemo_client : System.Web.UI.Page {
+    private const string FILE_SERIAL_NUMBER = "fileMpxSerialNumber";
+    private const string FILE_DEMODOWNLOAD_CLIENT = "fileDemoDownloadClient";
+    private const string FILE_DEMODOWNLOAD_LOG = "fileMpxDownloads";
+
+    
+
+    private LogFilesDemo logFiles;
+
+    protected void Page_Load(object sender, EventArgs e) {
+    }
+
+    protected override void OnInit(EventArgs e) {
+        base.OnInit(e);
+        logFiles = new LogFilesDemo(Server.MapPath("~") + "\\");
+
+    }
+
+    public void sendMessage() {
+        sendMessage(true);
+    }
+
+    public void sendMessage(bool userValidated) {
+        
+        string body = userValidated ? "User has successfully downloaded MPX executable." : "User has entered invalid data.";
+        body += "\n\n";
+        body += getFormattedUserInfo();
+
+        MailInfo.SendMail(body, MailInfo.EXEC_DOWNLOAD);
+    }
+
+    public string getUserInfo() {
+        string result = "";
+
+        result += txorganization.Text + ", ";
+
+        result += txname.Text + ", ";
+
+        result += txphone.Text + ", ";
+
+        result += txemail.Text + ", ";
+
+
+        result += txserialnumber.Text + ", ";
+
+        result += "IP: " + System.Web.HttpContext.Current.Request.UserHostAddress + ", ";
+        result += DateTime.Now.ToString();
+        return result;
+    }
+
+    public string getFormattedUserInfo() {
+        string result = "\n";
+        result += "Name: " + txname.Text + "\n";
+
+        result += "Company: " + txorganization.Text + "\n";
+
+        result += "Phone: " + txphone.Text + "\n";
+
+        result += "Email: " + txemail.Text + "\n";
+
+        result += "MPX Serial Number: " + txserialnumber.Text + "\n";
+
+        result += "IP Address: " + System.Web.HttpContext.Current.Request.UserHostAddress + "\n";
+
+        result += "Time: " + DateTime.Now.ToString();
+        return result;
+    }
+
+    public void clear_click(Object sender, System.EventArgs e) {
+        txname.Text = "";
+        txemail.Text = "";
+        txorganization.Text = "";
+        txphone.Text = "";
+        txserialnumber.Text = "";
+
+    }
+
+
+    public void submit_click(Object sender, System.EventArgs e) {
+        string company = txorganization.Text.Trim().ToUpper();
+        string serialNumber = txserialnumber.Text.Trim();
+        string user = txname.Text.Trim();
+
+        logFiles.SetUserDetails(company, user, serialNumber);
+
+        try {
+            if (!CaptchaValid()) {
+                ShowErrorMessage("Invalid captcha.");
+                return;
+            }
+        } catch (Exception ex) {
+            ShowErrorMessage(ex.Message);
+            return;
+        }
+
+        bool userSuccess = false;
+        try {
+            if (ValidateUser(company, serialNumber)) {
+                userSuccess = true;
+                try {
+                    string filePathToDownload = GetAppSettingsString(FILE_DEMODOWNLOAD_CLIENT);
+                    //ShowInfoMessage("Thank you for downloading MPX demo! Your download should start immediately.");
+                    try {
+                        using (StreamWriter fout = new StreamWriter(GetAppSettingsString(FILE_DEMODOWNLOAD_LOG), true)) {                   //simple file open (with append  = true)
+                            fout.WriteLine("VALID USER: " + getUserInfo());
+                            fout.Close();
+                        }
+                    } catch (Exception ex2) { 
+                        logFiles.ErrorLog(ex2);
+                    }
+                    try {
+                        sendMessage(userSuccess);
+                    } catch (Exception ex) {
+                        logFiles.ErrorLog(ex);
+                    }
+                    DownloadFile(filePathToDownload);
+
+                } catch (Exception ex) {
+                    logFiles.ErrorLog(ex);
+                    ShowErrorMessage("Cannot download the file. Internal error.");
+                }
+
+            } else {
+                ShowErrorMessage("Error in downloading MPX demo. Invalid user data.");
+                try {
+                    using (StreamWriter fout = new StreamWriter(GetAppSettingsString(FILE_DEMODOWNLOAD_LOG), true)) {                   //simple file open (with append  = true)
+                        fout.WriteLine("INVALID USER: " + getUserInfo());
+                        fout.Close();
+                    }
+                } catch (Exception ex2) {
+                    logFiles.ErrorLog(ex2);
+                }
+                try {
+                    sendMessage(userSuccess);
+
+                } catch (Exception ex) {
+                    logFiles.ErrorLog(ex);
+                }
+            }
+
+        } catch (Exception exep) {
+            logFiles.ErrorLog(exep);
+            ShowErrorMessage("Internal error has occured. Cannot validate user.");
+        }
+        
+
+
+    }
+
+    private void DownloadFile(string filepath) {
+        FileInfo objFileInfo = new FileInfo(filepath);
+        if (objFileInfo.Exists) {
+            Response.Clear();
+            Response.AddHeader("Content-Disposition", "attachment;filename=" + objFileInfo.Name);//Add File name to dialog display
+            Response.AddHeader("Content-Length", objFileInfo.Length.ToString());//Add the file length to dialog display
+            Response.ContentType = "application/octet-stream";
+            Response.TransmitFile(objFileInfo.FullName);//download your file form server
+            Response.End();
+        } else {
+            throw new Exception("Cannot download file. File '" + objFileInfo.FullName + "' does not exist.");
+        }
+    }
+
+    private bool ValidateUser(string company, string serialNumber) {
+        company = company.ToUpper();
+        serialNumber = serialNumber.ToUpper();
+        string checkFile = GetAppSettingsString(FILE_SERIAL_NUMBER);
+        using (StreamReader sr = new StreamReader(checkFile)) {
+            while (!sr.EndOfStream) {
+                string line = sr.ReadLine();
+                string[] fields = line.Split('\t');
+                if ((fields.Length >= 2) && company.Equals(fields[0].ToUpper()) && serialNumber.Equals(fields[1].ToUpper())) {
+                    return true;
+                }
+            }
+
+        }
+
+        return false;
+    }
+
+    private string GetAppSettingsString(string name) {
+        var filePath = ConfigurationManager.AppSettings[name];
+        if (filePath == null || string.IsNullOrEmpty(filePath.ToString())) {
+            throw new Exception("Fatal Error: missing app settings string '" + name + "' in web.config file.");
+        }
+        return Server.MapPath("~") + "\\" + filePath.ToString();
+    }
+
+    
+
+    public void ShowInfoMessage(string message) {
+        lblInfoMessage.Text = message;
+        SetFocusOn(btnMessageOk.ClientID);
+        modalExtenderMessage.Show();
+
+    }
+
+    public void ShowErrorMessage(string message) {
+        lblGeneralError.Text = message;
+        SetFocusOn(btnOkError.ClientID);
+        modalExtenderError.Show();
+    }
+
+    public void SetFocusOn(string clientId) {
+        string script = "<SCRIPT language='javascript' type='text/javascript'>function fnFocus() { eval(\"document.getElementById('" + clientId + "').focus()\") } setTimeout(\"fnFocus()\",200); </SCRIPT>";
+        Page.ClientScript.RegisterStartupScript(this.GetType(), "print_script", script);
+    }
+
+    protected void Refresh(object sender, EventArgs e) {
+        pnlCaptcha.Update();
+        txtCaptcha.Focus();
+    }
+
+    protected bool CaptchaValid() {
+        MSCaptcha.CaptchaControl captcha = (MSCaptcha.CaptchaControl)pnlCaptcha.FindControl("loginCaptcha");
+        if (captcha == null) {
+            throw new Exception("Internal captcha problem.");
+        } else {
+            try {
+                captcha.ValidateCaptcha(txtCaptcha.Text.Trim());
+            } catch (Exception ex) {
+                throw new Exception("The captcha expired or was filled in too fast.");
+            }
+        }
+        return captcha.UserValidated;
+
+    }
+
+
+}

@@ -1,0 +1,335 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Collections;
+using System.Collections.Specialized;
+using System.Data;
+using System.Linq;
+using System.Data.SqlClient;
+using System.Data.OleDb;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+
+public partial class Labor : DbPage
+{
+    private DataTable dt;
+    
+    public Labor()
+    {
+        PAGENAME = "labor.aspx";
+    }
+    
+    protected void Page_Load(object sender, EventArgs e)
+    {
+        //string cookieid = GetCookieId();
+
+        if (!Page.IsPostBack)
+        {
+            LinkTables();
+            btnOk.OnClientClick = String.Format("fnClickOK('{0}','{1}')", btnOk.UniqueID, "");
+            this.SetData();
+        }
+        
+        
+        
+    }
+
+    protected void btnOk_Click(object sender, EventArgs e)
+    {
+        //lblRow.Text = String.Format("{0}", Request.QueryString["selectedRowId"]);
+        lblRow.Text = String.Format("{0}", Request.Form["selectedRowId"]);
+
+        if (rdbtnCopy.Checked)
+        {
+            Copy();
+            rdbtnCopy.Checked = false;
+        }
+        else if (rdbtnDelete.Checked)
+        {
+            DeleteRow();
+            rdbtnDelete.Checked = false;
+        }
+        else if (rdbtnEdit.Checked)
+        {
+            Edit();
+            rdbtnEdit.Checked = false;
+        }
+        
+
+    }
+
+    private string Sort
+    {
+        get
+        {
+            return String.Concat(this.SortExpression,(this.SortDirection == SortDirection.Ascending) ? " ASC" : " DESC");
+        }
+    }
+
+    private SortDirection SortDirection
+    {
+        get
+        {
+            if (ViewState["SortDirection"] == null)
+            {
+                ViewState["SortDirection"] = SortDirection.Ascending;
+            }
+
+            return (SortDirection)ViewState["SortDirection"];
+        }
+        set { ViewState["SortDirection"] = value; }
+    }
+
+    private string SortExpression
+    {
+        get
+        {
+            if (ViewState["SortExpression"] == null)
+            {
+                ViewState["SortExpression"] = "LaborID";
+            }
+
+            return ViewState["SortExpression"].ToString();
+        }
+        set { ViewState["SortExpression"] = value; }
+    }
+
+    private IDictionary<string, object> GetValues(GridViewRow row)
+    {
+        IOrderedDictionary dictionary = new OrderedDictionary();
+
+        foreach (Control control in row.Controls)
+        {
+            DataControlFieldCell cell = control as DataControlFieldCell;
+
+            if ((cell != null) && cell.Visible)
+            {
+                cell.ContainingField.ExtractValuesFromCell(dictionary, cell, row.RowState, true);
+            }
+        }
+
+        IDictionary<string, object> values = new Dictionary<string, object>();
+
+        foreach (DictionaryEntry de in dictionary)
+        {
+            values[de.Key.ToString()] = de.Value;
+        }
+
+        return values;
+    }
+
+    private void SetData()
+    {
+        //SqlConnection connec = new SqlConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + "aa\\" + MAIN_USER_DATABASE + ";");
+        //SqlCommand cmd = new SqlCommand("SELECT LaborID, LaborDesc, LaborDept, GrpSiz FROM [tbllabor]", connec);
+        //SqlDataAdapter adapter = new SqlDataAdapter(cmd);
+        OleDbConnection connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + userDir + "\\" + MAIN_USER_DATABASE + ";");
+        OleDbCommand cmd = new OleDbCommand("SELECT LaborID, LaborDesc, LaborDept, GrpSiz FROM [tbllabor]", connec);
+        OleDbDataAdapter adapter = new OleDbDataAdapter(cmd);
+        {
+            try
+            {
+                connec.Open();
+                dt = new DataTable();
+                adapter.Fill(dt);
+                DataView dv = dt.DefaultView;
+                dv.Sort = this.Sort;
+
+                gridLabor.DataSource = dv;
+                gridLabor.DataBind();
+            }
+            catch { }
+        }
+    }
+
+    private void Edit()
+    {        
+        int rowIndex = GetCurrentRowIndex();
+        gridLabor.EditIndex = rowIndex;
+        this.SetData();       
+    }
+
+    private int GetCurrentRowIndex()
+    {
+        int rowIndex = -1;
+        int id = int.Parse(lblRow.Text);
+        foreach (GridViewRow row in gridLabor.Rows)
+        {
+            rowIndex++;
+            int key = int.Parse(gridLabor.DataKeys[rowIndex]["LaborID"].ToString());
+            if (id == key)
+            {
+                break;
+            }
+        }
+        return rowIndex;
+    }
+
+    
+
+    protected void RowUpdate(object source, EventArgs e)
+    {
+        int rowIndex = GetCurrentRowIndex();
+        GridViewRow row = gridLabor.Rows[rowIndex];
+        var newValues = this.GetValues(row);
+        TextBox txtLaborDesc = row.FindControl("txtLaborDesc") as TextBox;
+        //SqlConnection connec = new SqlConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + "aa\\" + MAIN_USER_DATABASE + ";");
+        //SqlCommand cmd = new SqlCommand("UPDATE [tbllabor] SET [LaborDesc] = @LaborDesc, [LaborDept] = @LaborDept, [Grpsiz] = @GrpSiz WHERE (LaborID = @LaborID)", connec);
+        OleDbConnection connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + "aa\\" + MAIN_USER_DATABASE + ";");
+        //OleDbCommand cmd = new OleDbCommand("UPDATE [tbllabor] SET [LaborDesc] = @LaborDesc, [LaborDept] = @LaborDept, [GrpSiz] = @GrpSiz WHERE (LaborID = @LaborID)", connec);
+        OleDbCommand cmd = new OleDbCommand("UPDATE [tbllabor] SET [LaborDesc] = ?, [LaborDept] = ?, [GrpSiz] = ? WHERE [LaborID] = ?", connec);
+        {
+            cmd.CommandType = CommandType.Text;
+            
+            cmd.Parameters.AddWithValue("LaborDesc", newValues["LaborDesc"]);
+            cmd.Parameters.AddWithValue("LaborDept", newValues["LaborDept"]);
+            cmd.Parameters.AddWithValue("GrpSiz", newValues["GrpSiz"]);
+            cmd.Parameters.AddWithValue("LaborID", gridLabor.DataKeys[row.RowIndex]["LaborID"]);
+            
+
+            try
+            {
+                connec.Open();
+                int result = cmd.ExecuteNonQuery();
+                gridLabor.EditIndex = -1;
+
+                this.SetData();
+                connec.Close();
+                    
+            }   
+            catch { }
+        }
+    }
+
+    protected void RowUpdateCancel(object source, EventArgs e)
+    {
+        gridLabor.EditIndex = -1;
+        this.SetData();
+    }
+
+    protected void DeleteRow()
+    {
+        int rowIndex = GetCurrentRowIndex();
+        GridViewRow row = gridLabor.Rows[rowIndex];
+        var newValues = this.GetValues(row);
+        //SqlConnection connec = new SqlConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + "aa\\" + MAIN_USER_DATABASE + ";");
+        //SqlCommand cmd = new SqlCommand("DELETE FROM [tbllabor] WHERE (LaborID = @LaborID)", connec);
+        OleDbConnection connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + "aa\\" + MAIN_USER_DATABASE + ";");
+        OleDbCommand cmd = new OleDbCommand("DELETE FROM [tbllabor] WHERE (LaborID = @LaborID)", connec);
+        cmd.Parameters.AddWithValue("LaborID", gridLabor.DataKeys[row.RowIndex]["LaborID"]);
+        
+        try
+        {
+            connec.Open();
+
+            int result = cmd.ExecuteNonQuery();
+            gridLabor.EditIndex = -1;
+            this.SetData();
+            connec.Close();
+            
+        }
+        catch { }
+    }
+
+    protected void grid_RowCommand(object sender, GridViewCommandEventArgs e)
+    {
+        if (e.CommandName.Equals("Insert"))
+        {
+            Button btnInsert = e.CommandSource as Button;
+
+            if (btnInsert == null) { return; }
+
+            GridViewRow row = btnInsert.NamingContainer as GridViewRow;
+            int rowIndex = row.RowIndex;
+
+            TextBox txtLaborDesc = row.FindControl("txtLaborDesc") as TextBox;
+            TextBox txtLaborDept = row.FindControl("txtLaborDept") as TextBox;
+            TextBox txtGrpSiz = row.FindControl("txtGrpSiz") as TextBox;
+
+            if (txtLaborDesc == null) { return; }
+            if (txtLaborDept == null) { return; }
+            if (txtGrpSiz == null) { return; }
+
+
+            //  gwwd  hard wired ???
+
+            //SqlConnection connec = new SqlConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + "aa\\" + MAIN_USER_DATABASE + ";");
+            //SqlCommand cmd = new SqlCommand("INSERT INTO [tbllabor] ([LaborDesc], [LaborDept], [GrpSiz]) VALUES (@LaborDesc, @LaborDept, @GrpSiz); SELECT @LaborID = SCOPE_IDENTITY()", connec);
+            OleDbConnection connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + "aa\\" + MAIN_USER_DATABASE + ";");
+            //OleDbCommand cmd = new OleDbCommand("INSERT INTO [tbllabor] ([LaborDesc], [LaborDept], [GrpSiz]) VALUES (@LaborDesc, @LaborDept, @GrpSiz); SELECT @LaborID = SCOPE_IDENTITY()", connec);
+            OleDbCommand cmd = new OleDbCommand("INSERT INTO [tbllabor] ([LaborDesc], [LaborDept], [GrpSiz]) VALUES (?,?,?);", connec);
+            {
+                cmd.Parameters.AddWithValue("LaborDesc", txtLaborDesc.Text);
+                cmd.Parameters.AddWithValue("LaborDept", txtLaborDept.Text);
+                cmd.Parameters.AddWithValue("GrpSiz", txtGrpSiz.Text);
+
+                try
+                {
+                    connec.Open();
+                    int result = cmd.ExecuteNonQuery();
+                    this.SetData();
+                    connec.Close();
+                }
+                catch { }
+            }
+        }
+    }
+
+    protected void Copy()
+    {
+        int rowIndex = GetCurrentRowIndex();
+        GridViewRow row = gridLabor.Rows[rowIndex];
+        var newValues = this.GetValues(row);
+
+        GridViewRow insertRow = gridLabor.FooterRow;
+        TextBox txtLaborDesc = insertRow.FindControl("txtLaborDesc") as TextBox;
+        TextBox txtLaborDept = insertRow.FindControl("txtLaborDept") as TextBox;
+        TextBox txtGrpSiz = insertRow.FindControl("txtGrpSiz") as TextBox;
+
+        txtLaborDept.Text = newValues["LaborDept"].ToString();
+        txtGrpSiz.Text = newValues["GrpSiz"].ToString();
+        txtLaborDesc.Focus();
+
+        
+    }
+
+    protected void OnSorting(object sender, GridViewSortEventArgs e)
+    {
+        if (this.SortExpression.Equals(e.SortExpression))
+        {
+            this.SortDirection = (this.SortDirection == SortDirection.Ascending) ? SortDirection.Descending : SortDirection.Ascending;
+        }
+        else
+        {
+            this.SortDirection = SortDirection.Ascending;
+        }
+
+        this.SortExpression = e.SortExpression;
+
+        this.SetData();
+    }
+
+    protected void PageIndexChanging(object sender, GridViewPageEventArgs e)
+    {
+        gridLabor.PageIndex = e.NewPageIndex;
+
+        this.SetData();
+    }
+
+    protected void Grid_RowDataBound(object sender, GridViewRowEventArgs e)
+    {
+        if (e.Row.RowType == DataControlRowType.Header)
+        {
+            foreach (TableCell cell in e.Row.Cells)
+            {
+                foreach (Control ctl in cell.Controls)
+                {
+                    if (ctl.GetType().ToString().Contains("DataControlLinkButton"))
+                    {
+                        cell.Attributes.Add("title", "Sort");
+                    }
+                }
+            }
+        }
+    }
+}

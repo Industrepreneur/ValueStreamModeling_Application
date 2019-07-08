@@ -1,0 +1,267 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.OleDb;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+
+public partial class diagrams : DbPage {
+    public diagrams() {
+        PAGENAME = "diagrams.aspx";
+    }
+
+    protected void Page_Load(object sender, EventArgs e) {
+        base.Page_Load(sender, e);
+        if (IsWhatifMode()) {
+            if (radioNewProduct.Checked) {
+                radioNewProduct.Checked = false;
+                radioExProduct.Checked = true;
+                if (dropListProducts.Items.Count == 0) {
+                    Master.ShowErrorMessage("MPX is running in whatif mode but no existing products were found!");
+                }
+            }
+            radioNewProduct.Visible = false;
+            txtNewProduct.Visible = false;
+            
+        } else {
+            radioNewProduct.Enabled = true;
+            txtNewProduct.Visible = true;
+            radioNewProduct.Visible = true;
+            if (dropListProducts.Items.Count == 0) {
+                radioExProduct.Checked = false;
+                radioNewProduct.Checked = true;
+                radioExProduct.Enabled = false;
+            } else {
+                radioExProduct.Enabled = true;
+            }
+        }
+    }
+
+    protected void btnShowDiagram_Click(object sender, EventArgs e) {
+        int diagType = -1;
+        int prodId = -1;
+        try {
+            if (radioShopOnly.Checked) {
+                diagType = FlexAPInamespace.FlexAPI.SHOPFLOOR;
+                prodId = 0;
+            } else {
+                // set diagram type
+                if (radioProdOnly.Checked) {
+                    diagType = FlexAPInamespace.FlexAPI.PARTROUTING;
+                } else if (radioShopProd.Checked) {
+                    diagType = FlexAPInamespace.FlexAPI.SHOP_ROUTING;
+                }
+
+                // set product
+                if (radioExProduct.Checked) {
+                    try {
+                        prodId = int.Parse(dropListProducts.SelectedValue);
+                    } catch (Exception) {
+                        throw new Exception("An error has occured when parsing product and the diagram cannot load.");
+                    }
+                } else if (radioNewProduct.Checked) {
+                    String prodName = MyUtilities.clean(txtNewProduct.Text).ToUpper();
+                    if (prodName.Equals(String.Empty)) {
+                        throw new Exception("Cannot display the diagram. Invalid name for the new product.");
+                    } else if (ProductExists(prodName)) {
+                        Master.ShowErrorMessage("A product with the name " + prodName + " already exists. Please choose a different name.");
+                    } else {
+                        // everything ok
+                        // insert new product
+                        if (!UpdateSql("INSERT INTO tblprodfore (ProdDesc) VALUES ('" + prodName + "');")) {
+                            throw new Exception("An error has occured while creating a new product. Please try again.");
+                        } else {
+                            ClassA classA = new ClassA(GetDirectory() + userDir);
+                            
+                            try {
+                                prodId = int.Parse(GetDatabaseField("ProdID", "ProdDesc", prodName, "tblprodfore"));
+                                classA.addoper_1(prodId); // add dock, stock, scrap operations and default routing
+                                dropListProducts.DataBind(); // update product list
+                                SyncTables();
+                                UpdateOperNames();
+                                UpdateEquipNames();
+                            } catch (Exception) {
+                                classA.Close();
+                                throw new Exception("An error has occured while parsing the new product. Please try again.");
+                            }
+                            classA.Close();
+                        }
+                    }
+                }
+                
+
+            }
+            // set diagram type/product in the database
+            if (UpdateSql("UPDATE zstblstate SET currentDiag = " + diagType + ";")) {
+                if (prodId == -1 || UpdateSql("UPDATE zstblstate SET currentProdId = " + prodId + ";")) {
+                    Response.Redirect("flash_diagrams.aspx");
+                } else {
+                    throw new Exception("An error has occured and the diagram cannot load. Please try again.");
+                }
+            } else {
+                throw new Exception("An error has occured and the diagram cannot load. Please try again.");
+            }
+
+        } catch (Exception ex) {
+            Master.ShowErrorMessage(ex.Message);
+        }
+        //if (checkShopfloor.Checked) {
+        //    diagType = FlexAPInamespace.FlexAPI.SHOPFLOOR;
+        //}
+        //if (checkRouting.Checked) {
+        //    if (diagType == FlexAPInamespace.FlexAPI.SHOPFLOOR) {
+        //        diagType = FlexAPInamespace.FlexAPI.SHOP_ROUTING;
+        //    } else {
+        //        diagType = FlexAPInamespace.FlexAPI.PARTROUTING;
+        //    }
+        //}
+        //try {
+        //    int prodId = int.Parse(dropListProducts.SelectedValue);
+        //    if (UpdateSql("UPDATE zstblstate SET currentDiag = " + diagType + ";") && UpdateSql("UPDATE zstblstate SET currentProdId = " + prodId + ";")) {
+        //        pnlFlash.Visible = true;
+        //    } else {
+        //        throw new Exception();
+        //    }
+        //} catch (Exception) {
+        //    pnlFlash.Visible = false;
+        //    Master.ShowErrorMessage("An error has occured and the diagram cannot load.");
+        //}
+
+
+    }
+
+    protected bool ProductExists(string prodName) {
+        bool exists = false;
+        for (int i = 0; i < dropListProducts.Items.Count; i++) {
+            if (dropListProducts.Items[i].Text.ToUpper().Equals(prodName.ToUpper())) {
+                exists = true;
+                break;
+            }
+        }
+        return exists;
+    }
+
+    protected override void OnInit(EventArgs e) {
+        base.OnInit(e);
+        string dataFile = GetDirectory() + userDir + MAIN_USER_DATABASE;
+        srcProductsList.DataFile = dataFile;
+        try {
+            dropListProducts.DataBind();
+        } catch (Exception ex) {
+            Master.ShowErrorMessage("Unknown MPX database error. Model might be loaded wrong.");
+        }
+    }
+
+    protected void UpdateOperNames() {
+        OleDbConnection connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + userDir + MAIN_USER_DATABASE + ";");
+
+        OleDbCommand cmdOpSelect = new OleDbCommand("SELECT OpID, OpNam FROM tbloper;", connec);
+        OleDbDataAdapter adapterOp = new OleDbDataAdapter(cmdOpSelect);
+        DataTable dt = new DataTable();
+        try {
+            connec.Open();
+            adapterOp.Fill(dt);
+            foreach (DataRow row in dt.Rows) {
+                try {
+                    OleDbCommand cmd = new OleDbCommand("UPDATE tbloperfrto SET FromOpName = ? WHERE OpNumF = ?", connec);
+                    cmd.Parameters.AddWithValue("FromOpName", row["OpNam"]);
+                    cmd.Parameters.AddWithValue("OpNumF", row["OpID"]);
+                    cmd.ExecuteNonQuery();
+                } catch (Exception) { }
+                try {
+                    OleDbCommand cmd = new OleDbCommand("UPDATE tbloperfrto SET ToOpName = ? WHERE OpNumT = ?", connec);
+                    cmd.Parameters.AddWithValue("ToOpName", row["OpNam"]);
+                    cmd.Parameters.AddWithValue("OpNumT", row["OpID"]);
+                    cmd.ExecuteNonQuery();
+                } catch (Exception) { }
+
+            }
+            connec.Close();
+        } catch (Exception) {
+            try {
+                connec.Close();
+                connec = null;
+            } catch { }
+        }
+
+    }
+
+    protected void UpdateEquipNames() {
+        OleDbConnection connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + userDir + MAIN_USER_DATABASE + ";");
+
+        OleDbCommand cmdEqSelect = new OleDbCommand("SELECT EquipId, EquipDesc FROM tblequip;", connec);
+        OleDbDataAdapter adapterEq = new OleDbDataAdapter(cmdEqSelect);
+        DataTable dt = new DataTable();
+        try {
+            connec.Open();
+            adapterEq.Fill(dt);
+            foreach (DataRow row in dt.Rows) {
+                try {
+                    OleDbCommand cmd = new OleDbCommand("UPDATE tbloper SET EquipDesc = ? WHERE EqId = ?", connec);
+                    cmd.Parameters.AddWithValue("EquipDesc", row["EquipDesc"]);
+                    cmd.Parameters.AddWithValue("EqId", row["EquipId"]);
+                    cmd.ExecuteNonQuery();
+                } catch (Exception) { }
+
+            }
+            connec.Close();
+        } catch (Exception) {
+            try {
+                connec.Close();
+                connec = null;
+            } catch { }
+        }
+    }
+
+    // copied from products_table.aspx
+    protected void SyncTables() {
+        OleDbConnection connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + userDir + MAIN_USER_DATABASE + ";");
+
+        OleDbCommand cmdSelect = new OleDbCommand("SELECT ProdId, ProdDesc FROM tblprodfore;", connec);
+        OleDbDataAdapter adapter = new OleDbDataAdapter(cmdSelect);
+        try {
+            connec.Open();
+            DataTable dt = new DataTable();
+            adapter.Fill(dt);
+            foreach (DataRow row in dt.Rows) {
+                try {
+                    OleDbCommand cmd = new OleDbCommand("UPDATE tbloper SET ProdDesc = ? WHERE ProdFore = ?", connec);
+                    cmd.Parameters.AddWithValue("ProdDesc", row["ProdDesc"]);
+                    cmd.Parameters.AddWithValue("ProdFore", row["ProdId"]);
+                    cmd.ExecuteNonQuery();
+                } catch (Exception) { }
+                try {
+                    OleDbCommand cmd = new OleDbCommand("UPDATE tblOperFrTo SET ProdDesc = ? WHERE PartFore = ?", connec);
+                    cmd.Parameters.AddWithValue("ProdDesc", row["ProdDesc"]);
+                    cmd.Parameters.AddWithValue("PartFore", row["ProdId"]);
+                    cmd.ExecuteNonQuery();
+                } catch (Exception) { }
+                try {
+                    OleDbCommand cmd = new OleDbCommand("UPDATE tblibom SET compName = ? WHERE CompID = ?", connec);
+                    cmd.Parameters.AddWithValue("compName", row["ProdDesc"]);
+                    cmd.Parameters.AddWithValue("CompID", row["ProdId"]);
+                    cmd.ExecuteNonQuery();
+                } catch (Exception) { }
+                try {
+                    OleDbCommand cmd = new OleDbCommand("UPDATE tblibom SET ParentName = ? WHERE ParentID = ?", connec);
+                    cmd.Parameters.AddWithValue("ParentName", row["ProdDesc"]);
+                    cmd.Parameters.AddWithValue("ParentID", row["ProdId"]);
+                    cmd.ExecuteNonQuery();
+                } catch (Exception) { }
+            }
+
+
+            connec.Close();
+        } catch (Exception) {
+            try {
+                connec.Close();
+                connec = null;
+            } catch { }
+        }
+
+
+    }
+
+}

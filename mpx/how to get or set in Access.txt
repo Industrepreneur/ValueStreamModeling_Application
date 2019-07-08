@@ -1,0 +1,223 @@
+
+
+GET {
+this is the client-side ajax script that passes the array myFilePath as JSON class. 
+Notice that it is calling a function on return and passing the response, which in this case is a class from the Server as an array, dataValues
+
+
+var myFilePath = {};
+            myFilePath.mainDir = '<%=Server.MapPath("~").Replace("\\","\\\\")%>';
+            myFilePath.userDir = '<%="App_Data\\\\" + MyUtilities.clean(userDir) + "\\\\"%>';
+            myFilePath.userDb = '<%=MAIN_USER_DATABASE%>';
+
+
+            $.ajax(
+                {
+
+                    type: 'POST',
+                    dataType: 'json',
+                    contentType: 'application/json',
+                    url: '/output/equipment/utilization.aspx/SetGoogleData',
+                    data: "{myPath:" + JSON.stringify(myFilePath) + "}",
+
+                    success: function (response) {
+                        drawVisualization(response.d); // calling method  
+                    },
+
+                    error: function () {
+                        alert("Error loading data! Please try again.");
+                    }
+
+                });
+
+These are the server side classes 
+
+    public List<Result> myList;
+
+    public partial class Result
+    {
+        public string Name;
+        public string Scenario;
+        public string Setup;
+        public string WFL;
+        public string Run;
+        public string Repair;
+        public string Idle;
+        public string ClockTime;
+        public string LaborAssigned;
+    }
+
+    public partial class FilePath
+    {
+
+        public string mainDir;
+        public string userDir;
+        public string userDb;
+
+    }
+
+This is the server-side Web method that the Ajax event called
+
+ [WebMethod]
+    public static List<Result> SetGoogleData(FilePath myPath)
+    {
+
+        string myQuery = "SELECT DISTINCTROW tblEquip.EquipDesc, IIf([zstblwhatif].[display],[zstblwhatif].[name],\"_skip\") AS description, tblLabor.LaborDesc, SetupUtil, RunUtil, LabWaitUtil, RepUtil, Idle, ([Setuputil]+[runUtil]+[repUtil]+[labWaitUtil]) AS Total, tblRsEquip.clocktime, tblRsEquip.EquipID, zstblwhatif.familyid, tblRsEquip.WID" +
+            " FROM ((tblRsEquip INNER JOIN tblEquip ON tblRsEquip.EquipID = tblEquip.EquipID) INNER JOIN tblLabor ON tblEquip.Labor = tblLabor.LaborID) INNER JOIN zstblwhatif ON tblRsEquip.WID = zstblwhatif.WID" +
+            " WHERE (((IIf([zstblwhatif].[display],[zstblwhatif].[name],\"_skip\"))<>\"_skip\") AND ((tblEquip.EquipDesc)<>\"None\"))";
+        //CHANGE THE HARDCODED DIRECTORY 
+
+        string source = myPath.mainDir + myPath.userDir + myPath.userDb;
+        source.ToString();
+
+        OleDbConnection connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" + source + ";");
+        OleDbCommand cmd = new OleDbCommand(myQuery, connec);
+        OleDbDataAdapter adapter = new OleDbDataAdapter(cmd);
+
+        DataTable dt = new DataTable();
+        List<Result> dataList = new List<Result>();
+
+        try
+        {
+            connec.Open();
+
+            adapter.Fill(dt);
+
+            if (dt.Rows.Count == 0)
+            {
+                throw new Exception();
+            }
+            else
+            {
+                foreach (DataRow dtrow in dt.Rows)
+                {
+                    Result result = new Result
+                    {
+                        Name = dtrow[0].ToString().ToUpper(),
+                        Scenario = dtrow[1].ToString().ToUpper(),
+                        Setup = dtrow[3].ToString(),
+                        WFL = dtrow[5].ToString(),
+                        Run = dtrow[4].ToString(),
+                        Repair = dtrow[6].ToString(),
+                        LaborAssigned = dtrow[2].ToString(),
+                        ClockTime = dtrow[9].ToString(),
+                        Idle = dtrow[7].ToString(),
+                    };
+
+
+                     dataList.Add(result);
+                }
+            }
+
+
+            connec.Close();
+
+        }
+        catch
+        {
+
+            try
+            {
+                connec.Close();
+                connec = null;
+            }
+            catch { }
+        }
+
+        return dataList;
+
+    }
+
+This is the client-side function that will run, which accepts the  List<Result> dataList
+
+  function drawVisualization(dataValues) {
+
+Now we can do things like dataValues.length or myClientVar = dataValues[i].Scenario
+  }
+
+
+SET {
+These are the server-side functions that crawl the table to create an [] of values called Entries;
+This [] is passed to a second function which injects the values into Access;
+Notice some of the injections are using client-side controls. If I was going to redo their code, I would write my Ajax to pass things like partID selected from the dropdown
+
+ protected override void InsertRow(bool goToEdit) {
+        GridViewRow row = grid.FooterRow;
+        Control[] txtControls = new Control[FIELDS.Length];
+
+        for (int i = 1; i < FIELDS.Length; i++) {
+            txtControls[i] = row.FindControl(TEXT_BOX_IDS[i]);
+            if (txtControls[i] == null) { return; }
+
+        }
+        string[] entries = new string[3];
+        for (int i = 1; i < 4; i++) {
+            string value;
+            if (COMBOS[i]) {
+                value = ((AjaxControlToolkit.ComboBox)txtControls[i]).Text;
+            } else {
+                value = ((TextBox)txtControls[i]).Text;
+            }
+            entries[i - 1] = value;
+        }
+        if (!InsertRoutingLine(entries)) {
+            Master.ShowErrorMessage(DbUse.INSERT_DATA_ERROR_MSG);
+        }
+    }
+
+    protected bool InsertRoutingLine(string[] entries) {
+        bool wasInserted = false;
+        for (int i=0; i< entries.Length; i++) {
+            entries[i] = MyUtilities.clean(entries[i]);
+            if (entries[i].Trim().Length > 0) {
+                entries[i] = entries[i].Trim();
+            }
+        }
+        connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + userDir + MAIN_USER_DATABASE + ";");
+        string command = "INSERT into tblOperFrTo (PartFore, OpNumF, OpNumT, Per, fromopname, ToOpName, ProdDesc) VALUES ( ?, ?, ?, ?, ?, ?, ?);";
+        OleDbCommand cmd = new OleDbCommand(command, connec);
+        OleDbCommand comm2 = new OleDbCommand("SELECT ProdID FROM tblprodfore WHERE ProdDesc = '" + dropListProducts.SelectedItem.Text + "';", connec);
+        OleDbDataAdapter adapter2 = new OleDbDataAdapter(comm2);
+        {
+
+            try {
+                connec.Open();
+                DataTable ds = new DataTable();
+                DataTable ds2 = new DataTable();
+                DataTable ds3 = new DataTable();
+
+                adapter2.Fill(ds2);
+                OleDbCommand comm = new OleDbCommand("SELECT OpID FROM tbloper WHERE ProdFore = " + ds2.Rows[0]["ProdID"] + " AND OpNam = '" + entries[0] + "';", connec);
+                OleDbDataAdapter adapter = new OleDbDataAdapter(comm);
+                adapter.Fill(ds);
+
+                OleDbCommand comm3 = new OleDbCommand("SELECT OpID FROM tbloper WHERE ProdFore = " + ds2.Rows[0]["ProdID"] + " AND OpNam = '" + entries[1] + "';", connec);
+                OleDbDataAdapter adapter3 = new OleDbDataAdapter(comm3);
+                adapter3.Fill(ds3);
+
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.AddWithValue("PartFore", ds2.Rows[0]["ProdID"]);
+                cmd.Parameters.AddWithValue("OpNumF", ds.Rows[0]["OpID"]);
+                cmd.Parameters.AddWithValue("OpNumT", ds3.Rows[0]["OpID"]);
+                cmd.Parameters.AddWithValue("Per", entries[2]);
+                cmd.Parameters.AddWithValue("fromopname", entries[0].ToUpper());
+                cmd.Parameters.AddWithValue("ToOpName", entries[1].ToUpper());
+                cmd.Parameters.AddWithValue("ProdDesc", dropListProducts.SelectedItem.Text);
+
+                int result = cmd.ExecuteNonQuery();
+                grid.EditIndex = -1;
+
+                this.SetData();
+                wasInserted = true;
+                connec.Close();
+            } catch {
+                try {
+                    connec.Close();
+                    connec = null;
+                } catch { }
+                SaveInsertValues(grid.FooterRow, TEXT_BOX_IDS);
+            }
+        }
+        return wasInserted;
+    }
+}        

@@ -1,0 +1,5 @@
+node_modules
+.vscode
+webpack\.config\.dev\.js
+
+webpack\.config\.prod\.js

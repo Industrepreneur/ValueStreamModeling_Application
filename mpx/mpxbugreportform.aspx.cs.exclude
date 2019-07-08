@@ -1,0 +1,64 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.IO;
+using System.Net.Mail;
+using BugReportForm;
+
+public partial class _Default : System.Web.UI.Page {
+
+    protected void Page_Load(object sender, EventArgs e) {
+
+    }
+
+    //public void sendMessage() {
+    //    MailMessage message = new MailMessage();
+    //    message.From = new MailAddress("btdmpx@gmail.com");
+
+    //    message.To.Add(new MailAddress("greg@build-to-demand.com"));
+    //    message.Subject = "MPX Demo Download";
+    //    message.Body = getFormattedUserInfo();
+
+    //    SmtpClient client = new SmtpClient();
+    //    client.EnableSsl = true;
+    //    client.Send(message);
+    //}
+
+    public void submit_click(Object sender, System.EventArgs e) {
+
+        string Area, Date, Description, Email, Model, Name, VSMAccount, BugDirectory;
+
+        Name = "";
+
+        Area = txName.Text;
+        Date = ddlMonth.Text + "/" + ddlDay.Text + "/" + txYear.Text;
+        Description = "hhggdffd";  // htmlTxDescription.Text;
+        Email = txEmail.Text;
+        Model = txModel.Text;
+        VSMAccount = txAccount.Text;
+        BugDirectory = "Bugs";
+
+        Bug newBug = new Bug(Area, Date, Description, Email, Model, Name, VSMAccount, BugDirectory);
+
+
+
+        string filename = newBug.GetScreenshotFilename();
+        try {
+            //TODO: Upload file to server 
+        } catch (Exception) {
+        }
+
+        Response.Redirect("mpxdemodownload.html", true); //TODO: Is this the right redirect?
+
+    }
+
+    protected void clear_click(Object sender, System.EventArgs e) {
+
+    }
+
+
+
+
+}

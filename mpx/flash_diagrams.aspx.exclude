@@ -1,0 +1,231 @@
+﻿<%@ Page Language="C#" AutoEventWireup="true" CodeFile="flash_diagrams.aspx.cs" Inherits="flash_diagrams" %>
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head runat="server">
+    <title>Value Stream Modeling Diagrams</title>
+    <link href="mpxbuttons.css" rel="stylesheet" type="text/css" />
+    <link href="mpxstyle.css" rel="stylesheet" type="text/css" />
+
+    <link id="Link2" rel="shortcut icon" type="image/x-icon" href="~/favicon.ico" />
+    <link id="Link1" runat="server" rel="icon" href="~/favicon.ico" type="image/ico" />
+    
+    <link href='https://fonts.googleapis.com/css?family=Roboto:500,400' rel='stylesheet' type='text/css' />
+    <link href='https://fonts.googleapis.com/css?family=Roboto+Condensed:400,300' rel='stylesheet' type='text/css'/>
+    <link href='https://fonts.googleapis.com/css?family=Droid+Serif' rel='stylesheet' type='text/css'/>
+    
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+
+    <script type="text/javascript" src="Scripts/shortcuts.js"></script>
+    <script>
+
+        function showLeavePopup() {
+            $('hey just confirm this').dialog(
+                {
+                    modal: true, //Not necessary but dims the page background
+                    buttons: {
+                        'Stay in Diagram': function () {
+                            //Whatever code you want to run when the user clicks save goes here
+                            return false;
+                        },
+                        'Leave Diagram': function () {
+                            //Code for delete goes here
+                            return true;
+                        }
+                    }
+                }
+            );
+        }
+
+    function loadXMLDoc() {
+            var xmlhttp;
+            if (window.XMLHttpRequest) {// code for IE7+, Firefox, Chrome, Opera, Safari
+                xmlhttp = new XMLHttpRequest();
+            }
+            else {// code for IE6, IE5
+                xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            xmlhttp.onreadystatechange = function () {
+                if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+                    seconds_left = xmlhttp.responseText;
+                }
+            }
+            xmlhttp.open("GET", "Timer.ashx?" + new Date().getTime(), true);
+            xmlhttp.send();
+    }
+        try {
+            shortcut.add("F1", function () {
+                var pdf = window.open("MPX_44_Manual.pdf", 'PDF', 'width=1000,height=800');
+                pdf.moveTo(200, 100);
+                function check() {
+                    if (pdf.document) {
+                        try {
+                            pdf.document.title = "Value Stream Modeling Help";
+                        } catch (err) { }
+                    } else {
+                        setTimeout(check, 10);
+                    }
+                } check();
+            });
+        } catch (err) { }
+
+    function HidePopup(popup) {
+        try {
+            $find(popup).hide();
+        } catch (err) {
+
+        }
+
+    }
+
+    function detectFlash() {
+        var hasFlash = false;
+        try {
+            var fo = new ActiveXObject('ShockwaveFlash.ShockwaveFlash');
+            if (fo) {
+                hasFlash = true;
+                //alert("Shockwave Flash detected!");
+            }
+        } catch (e) {
+            if (navigator.mimeTypes) {
+                if (navigator.mimeTypes['application/x-shockwave-flash'] == undefined) {
+                    alert("Shockwave Flash needs to be installed and enabled to display the graphical interface. Please download Adobe Shockwave Player from Adobe website and enable this plugin in your browser settings. For more detailed instructions click on 'Interface not displaying?' link.");
+                } else {
+                    if (navigator.mimeTypes['application/x-shockwave-flash'].enabledPlugin) {
+                        hasFlash = true;
+                        //alert("Shockwave Flash enabled!");
+                    } else {
+                        alert("Shockwave Flash needs to be enabled to display the graphical interface. Please enable Shockwave Flash plugin in your browser settings. For more detailed instructions click on 'Interface not displaying?' link.");
+                    }
+                }
+            }
+        }
+    }
+
+
+        var focClientId;
+        var seconds_left = 60 * 30;
+
+        var interval = setInterval(function () {
+            --seconds_left;
+            if (seconds_left > -10) {
+                if (seconds_left % 10 == 3) {
+                    loadXMLDoc();
+                }
+                if (seconds_left < 0) {
+                    document.getElementById('timer_div').innerHTML = "Logout Timer: 00 min 00 s";
+                } else {
+                    var min = trunc(seconds_left / 60);
+                    var s = seconds_left % 60;
+                    if (min < 10) {
+                        min = "0"+min;
+                    }
+
+                    if (s < 10) {
+                        s = "0" + s;
+                    }
+                    document.getElementById('timer_div').innerHTML = "Logout Timer: " + min + " min " + s + " s";
+                }
+            }
+        }, 1000);
+
+        function trunc(n) {
+            return n | 0; // bitwise operators convert operands to 32-bit integers
+        }
+
+        function showInstructions() {
+            alert("Shockwave Flash needs to be installed and enabled to display the graphical interface. If the graphical interface does not show please download Adobe Shockwave Player from Adobe website and enable this plugin in your browser settings. For more detailed instructions click on 'Interface not displaying?' link.");
+
+        }
+        function showDetailedFlashInstructions() {
+            var pdf = window.open("VSM_Flash_Instructions.pdf", 'PDF', 'width=1000,height=800');
+            pdf.moveTo(200, 100);
+            function checkDoc() {
+                if (pdf.document) {
+                    try {
+                        pdf.document.title = "Value Stream Modeling Help";
+                    } catch (err) { }
+                } else {
+                    setTimeout(checkDoc, 10);
+                }
+            } checkDoc();
+        }
+
+        </script>
+</head>
+<body>
+    
+        <form style="padding-top: 0px; margin-top: 0px;" id="mpxForm" method="post" runat="server">
+            <asp:ScriptManager ID="ScriptManager1" runat="server" />
+    <div class="page shadow">
+        
+        
+            <div class="header">
+
+                <div style="float:right;text-align:right; margin-top:-5px; font-weight:bold;margin-right:10px;">
+                <div style="height: 35px; font-size: 13px; font-family: 'Roboto', Verdana;"><span style="color: #b9e0bb;">Build</span><span style="color:#f7b2b3;">-To-</span><span style="color: #b0c8e2;">Demand</span><span style="color: #d7d7d7;">, Inc.</span></div>
+                <div>
+                    
+                    <asp:Label ID="lblUser" Text="Welcome!" runat="server" CssClass="userLabel"></asp:Label>
+                </div>
+                    </div>
+                
+                <div style="margin-left: 1px; float: left; width:40%;">
+                    <div class="countdown"  id="timer_div">Logout Timer: 30 min 00 s</div>
+                    <div><asp:LinkButton ID="btnGoBack" CssClass="goBack" Text="Leave Graphical Interface" OnClientClick="return confirm('By leaving the graphical interface you will lose all diagram changes that have not been updated. Do you still wish to leave the page?');" OnClick="btnGoBack_Click" ToolTip="Leave the graphical interface and go back to models page."  runat="server"></asp:LinkButton><a id="btnContentHelp" onclick="showDetailedFlashInstructions();">Interface not displaying?</a></div>
+                    
+                </div>
+                
+               
+                <img src="Images/gear.png" height="40" class="mpxTitleImage" />
+                <h1 class="mpxTitle" style="margin-bottom:5px;">Value Stream Modeling</h1>
+                 
+                 <div class="line2" style="clear: both;"></div>
+            </div>
+            <div class="content" style="background-color:#FFFFFF;">
+    <div>
+    <asp:Panel ID="pnlFlash" ScrollBars="Auto" BorderWidth="4" BorderColor="#FFAC74" Height="1100" runat="server" Visible="true">
+            <object  type="application/x-shockwave-flash" style="width:100%; height:100%" data="VMdiagrams-debug/VMdiagrams.swf"></object>
+        </asp:Panel>
+        
+        
+    </div>
+                </div>
+        </div>
+            <asp:Panel runat="server"> 
+            <asp:Panel ID="pnlError" CssClass="errorPopPanel" Width="250" runat="server" style="display:none">
+                    <h3>Error Message</h3>
+                    <asp:Label ID="lblGeneralError" runat="server">
+                        Cannot display the graphical interface because calculations are running in current model. Please wait and come back later.
+                    </asp:Label>
+                    <br />
+                    <br />
+
+                    <asp:Button Style="width: 60px;" ID="btnOkError" runat="server" Text="Ok" OnClientClick="HidePopup('errorPopupBehavior'); return false;" />
+
+
+                </asp:Panel>
+
+                <ajaxToolkit:ModalPopupExtender ID="modalExtenderError" runat="server"
+                    TargetControlID="dummy"
+                    PopupControlID="pnlError"
+                    BehaviorID="errorPopupBehavior"
+                    BackgroundCssClass="modalBackground"
+                    DropShadow="true">
+                </ajaxToolkit:ModalPopupExtender>
+                <div id="dummy" runat="server"></div>
+                </asp:Panel>
+            <div class="page footer">
+        
+        <asp:Label ID="lblLastLogin" Text="Last Login: 5/12/2013 10:44:27 PM; Last Logout: Normal logout." runat="server" CssClass="footerUserInfo"></asp:Label><br />
+        <a href="http://www.build-to-demand.com"><img src="Images/logo.png" style="height:68px;margin-left:auto;margin-right:auto; margin-top:1px;margin-bottom:0px;" /></a>
+        <div style="margin-top:1px;">
+            E-mail: <a href="mailto:Info@Build-To-Demand.com">Info@Build-To-Demand.com</a>
+            <br />
+            Copyright &copy; 2013  Build-To-Demand, Inc.
+        </div>
+    </div>
+    </form>
+</body>
+</html>

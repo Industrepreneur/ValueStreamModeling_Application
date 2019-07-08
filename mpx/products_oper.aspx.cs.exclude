@@ -1,0 +1,710 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.OleDb;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+
+public partial class products_oper : InputGridPage {
+
+    ProductDelegatePage helperProduct;
+
+    public products_oper() {
+        PAGENAME = "products_oper.aspx";
+        featureHelper = new OperDelegate();
+
+        int value = 2;
+        helperProduct = new ProductDelegatePage(value);
+
+        fieldsNonEditable = new bool[featureHelper.FIELDS.Length];
+        fieldsNonEditable[1] = true;
+
+    }
+
+    protected void Page_Load(object sender, EventArgs e) {
+        if (!Page.IsPostBack) {
+            TABLE_NAME = "tbloper";
+        }
+        base.Page_Load(sender, e);
+        grid.Columns[2].Visible = false;
+        //Table popupTable = pnlPopupLine.FindControl("popupTable") as Table;
+        //popupTable.Rows[1].Visible = false;
+        //rdbtnCopyLine.Visible = false;
+
+    }
+
+    protected override void Copy(int rowIndex) {
+        GridViewRow row = grid.Rows[rowIndex];
+        var newValues = this.GetValues(row);
+
+        GridViewRow insertRow = grid.FooterRow;
+        Control[] txtControls = new Control[FIELDS.Length];
+        for (int i = 1; i < FIELDS.Length; i++) {
+            txtControls[i] = insertRow.FindControl(TEXT_BOX_IDS[i]);
+            if (txtControls[i] == null) { return; }
+        }
+        int j = 1;
+        ((AjaxControlToolkit.ComboBox)txtControls[j]).Text = newValues[FIELDS[j]].ToString(); // product description
+
+        j = 3;
+        string origName = newValues[FIELDS[j]].ToString().Replace("&NBSP;", " ");
+        string copyName = origName + "_COPY";
+
+        copyName = GetUniqueName("Opnam", "OpID", "tbloper", copyName).ToUpper();
+        if (COMBOS[j]) {
+            ((AjaxControlToolkit.ComboBox)txtControls[j]).Items.Add(copyName);
+            ((AjaxControlToolkit.ComboBox)txtControls[j]).Text = copyName;
+        } else {
+            ((TextBox)txtControls[j]).Text = copyName;
+
+        }
+
+        for (int i = 4; i < FIELDS.Length; i++) {
+
+            if (COMBOS[i]) {
+                ((AjaxControlToolkit.ComboBox)txtControls[i]).Text = newValues[FIELDS[i]].ToString().Replace("&nbsp;", " ");
+            } else if (CHECKBOXES[i]) {
+                ((CheckBox)txtControls[i]).Checked = (bool)newValues[FIELDS[i]];
+            } else {
+                string value = newValues[FIELDS[i]].ToString();
+                ((TextBox)txtControls[i]).Text = newValues[FIELDS[i]].ToString().Replace("&nbsp;", " ");
+            }
+        }
+        txtControls[3].Focus();
+        /*TextBox[] txtInserts = new TextBox[FIELDS.Length];
+        for (int i = 1; i < FIELDS.Length; i++) {
+            txtInserts[i] = insertRow.FindControl(TEXT_BOX_IDS[i]) as TextBox;
+            if (txtInserts[i] == null) { return; }
+        }
+        for (int i = 2; i < FIELDS.Length; i++) {
+            txtInserts[i].Text = newValues[FIELDS[i]].ToString();
+        }
+        txtInserts[1].Focus();*/
+    }
+
+    private void InitializeComponent() {
+        pnlMainGrid = gridPanel;
+
+    }
+
+
+
+    protected override void OnInit(EventArgs e) {
+        InitializeComponent();
+        pnlMenu.Controls.Add(new LiteralControl("<h2>Products</h2>"));
+        base.OnInit(e);
+        if (IsWhatifMode()) {
+            Response.Redirect("whatif_" + PAGENAME);
+        }
+        helperProduct.SetMenuContainer(pnlMenu);
+        helperProduct.OnInit(e);
+        tableSync = new TableSyncOperRouting(userDir);
+
+        string sheet = "Cheat Sheat Product Operations and Routings Page";
+        Master.SetHelpSheet(sheet + ".pdf", sheet);
+
+    }
+
+    protected override Control getButtonDiv() {
+        return buttondiv;
+    }
+
+    protected override Panel GetSecondPanel() {
+        return secondPanel;
+    }
+
+    protected override Panel GetThirdPanel() {
+        return thirdPanel;
+    }
+
+    protected override Panel GetFourthPanel() {
+        return fourthPanel;
+    }
+
+    protected override Panel GetFifthPanel() {
+        return fourthPanel;
+    }
+
+
+
+    protected void FillComboOperTo(AjaxControlToolkit.ComboBox ddl) {
+        OleDbConnection connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + userDir + MAIN_USER_DATABASE + ";");
+        string commandRouting = "SELECT OpID, OpNam from tblOper WHERE ProdFore = " + " AND [OpNam]<>\"dock\";"; // TODO
+        OleDbCommand cmd = new OleDbCommand(commandRouting, connec);
+        OleDbDataAdapter adapter = new OleDbDataAdapter(cmd); //
+        {
+            try {
+                connec.Open();
+                DataTable ds = new DataTable();
+                adapter.Fill(ds);
+                if (ddl != null) {
+                    ddl.Items.Clear();
+                    for (int i = 0; i < ds.Rows.Count; i++) {
+                        ListItem item = new ListItem(ds.Rows[i]["OpNam"].ToString());
+                        ddl.Items.Add(item);
+                    }
+                }
+                connec.Close();
+            } catch (Exception ex) {
+                try {
+                    connec.Close();
+                    connec = null;
+                } catch { }
+                string message = ex.Message;
+            }
+        }
+    }
+
+    /*protected override List<string> GetDropList(string name) {
+        string tablename;
+        if (name.Equals("EquipDesc")) {
+            tablename = "tblequip";
+        } else if (name.Equals("ProdDesc")) {
+            tablename = "tblprodfore";
+        } else {
+            return new List<string>();
+        }
+        return GetDropList(name, tablename);
+    }*/
+
+
+    /*
+    protected override void ToAddMode() {
+        AjaxControlToolkit.ComboBox text1 = pnlPopupLine.FindControl(TEXT_BOX_IDS2[1]) as AjaxControlToolkit.ComboBox;
+        TextBox text2 = pnlPopupLine.FindControl(TEXT_BOX_IDS2[3]) as TextBox;
+        text1.Enabled = true;
+        text2.Enabled = true;
+        base.ToAddMode();
+
+    }
+
+    protected override void ToChoiceMode() {
+        AjaxControlToolkit.ComboBox text1 = pnlPopupLine.FindControl(TEXT_BOX_IDS2[1]) as AjaxControlToolkit.ComboBox;
+        TextBox text2 = pnlPopupLine.FindControl(TEXT_BOX_IDS2[3]) as TextBox;
+        text1.Enabled = false;
+        text2.Enabled = false;
+        base.ToChoiceMode();
+    }*/
+
+    protected void btnShowTimes_Click(object sender, EventArgs e) {
+        if (btnShowTimes.Text.Equals("Show Real Times")) {
+            grid.Columns[0].Visible = false;
+            if (grid.FooterRow != null) {
+                grid.FooterRow.Visible = false;
+            }
+            grid.ShowFooter = false;
+            thirdPanel.Visible = false;
+            this.TABLE_NAME = "tblOper_d";
+            btnShowTimes.Text = "Edit Operations";
+            {
+                ClassF calc = new ClassF(GetDirectory() + userDir);
+                try {
+                    calc = new ClassF(GetDirectory() + userDir);
+                    calc.setGlobalVar();
+                    calc.runsqlado("DELETE * FROM tblOper_d;");
+                    calc.runsqlado("DELETE * FROM zstblerrors;");
+                    calc.inOperRoutingPages = true;
+                    calc.MakeActualoper_all();
+                    string errorMsg = calc.GetErrorMessage();
+                    lblErrorRealTimes.Text = "Errors in calculating expressions in operation table:<br/>" + errorMsg;
+                    lblErrorRealTimes.Visible = !errorMsg.Trim().Equals(String.Empty);
+                } catch (Exception ex) {
+                    logFiles.ErrorLog(ex);
+                    Master.ShowErrorMessage("An error has occured while calculating expressions.");
+                } finally {
+                    calc.Close();
+                }
+            }
+        } else {
+            grid.Columns[0].Visible = true;
+            if (grid.FooterRow != null) {
+                grid.FooterRow.Visible = true;
+            }
+            grid.ShowFooter = true;
+            thirdPanel.Visible = true;
+            this.TABLE_NAME = "tbloper";
+            btnShowTimes.Text = "Show Real Times";
+
+        }
+        grid.PageIndex = 0;
+        this.SetData();
+
+    }
+
+    protected void SetTableQueryString() {
+        if (TABLE_NAME.ToLower().Equals("tbloper")) {
+            tableQueryString = "SELECT " + TABLE_NAME + ".*, tblProdFore.ProdID FROM " + TABLE_NAME + " INNER JOIN tblProdFore ON " + TABLE_NAME + ".ProdFore = tblProdFore.ProdID ";
+        } else {
+            tableQueryString = "SELECT " + TABLE_NAME + ".*, tblProdFore.ProdID, tblProdFore.ProdDesc, tblEquip.EquipId, tblEquip.EquipDesc FROM (" + TABLE_NAME + " INNER JOIN tblProdFore ON " + TABLE_NAME + ".ProdFore = tblProdfore.ProdID) INNER JOIN tblEquip ON " + TABLE_NAME + ".EqId = tblEquip.EquipID ";
+        }
+    }
+
+    protected override void PageIndexChanging(object sender, GridViewPageEventArgs e) {
+        base.PageIndexChanging(sender, e);
+    }
+
+    protected override List<string> GetDropList(string name) {
+        List<string> dropList = new List<string>();
+        string comm = "";
+        connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + userDir + MAIN_USER_DATABASE + ";");
+        if (name.Equals("ProdDesc")) {
+            comm = "SELECT ProdDesc, ProdId FROM tblprodfore ORDER BY ProdDesc";
+        } else if (name.ToLower().Equals("opnam")) {
+            comm = "SELECT DISTINCT OpNam FROM tbloper ORDER BY OpNam";
+        } else if (name.Equals("EquipDesc")) {
+            comm = "SELECT EquipDesc, EquipId FROM tblequip ORDER BY EquipDesc";
+        }
+        OleDbCommand cmd = new OleDbCommand(comm, connec);
+        OleDbDataAdapter adapter = new OleDbDataAdapter(cmd);
+        {
+            try {
+                connec.Open();
+                dt = new DataTable();
+                adapter.Fill(dt);
+                for (int i = 0; i < dt.Rows.Count; i++) {
+                    dropList.Add(dt.Rows[i][0].ToString()); // TODO finish getting full value/text fields
+                }
+
+                connec.Close();
+
+            } catch {
+                try {
+                    connec.Close();
+                    connec = null;
+                } catch { }
+            }
+        }
+        return dropList;
+    }
+
+    protected override void RowUpdate(int rowIndex) {
+        GridViewRow row = grid.Rows[rowIndex];
+
+        var newValues = this.GetValues(row);
+
+
+
+        connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + userDir + MAIN_USER_DATABASE + ";");
+        OleDbCommand cmd = new OleDbCommand(GetCommandString(Command.UPDATE), connec);
+
+
+        {
+            try {
+
+                int opId = Convert.ToInt32(grid.DataKeys[rowIndex].Value.ToString());
+                string opName = MyUtilities.clean(newValues["OpNam"].ToString()).ToUpper();
+                int opNumber = Convert.ToInt32(newValues["OpNum"].ToString());
+                int prodId = int.Parse(GetDatabaseField("ProdID", "ProdDesc", newValues["ProdDesc"].ToString(), "tblProdfore"));
+                
+                string oldOpName = null;
+
+                oldOpName = GetDatabaseField("OpNam", "OpID", opId, "tblOper");
+                int oldOpNumber = -1;
+                try {
+                    oldOpNumber = int.Parse(GetDatabaseField("OpNum", "OpID", opId, "tblOper"));
+                } catch (Exception) { }
+
+                if (opName.Equals("DOCK") || opName.Equals("STOCK") || opName.Equals("SCRAP")) {
+                    if (oldOpName.ToUpper().Equals(opName)) {
+                        throw new Exception("Attempt to edit operation names DOCK, STOCK, SCRAP.");
+                    } else {
+                        throw new Exception("Attempt to use reserved operation names DOCK, STOCK, SCRAP.");
+                    }
+                }
+
+
+                connec.Open();
+                cmd.CommandType = CommandType.Text;
+                for (int i = 1; i < FIELDS.Length; i++) {
+                    if (mode.Equals("Advanced") || !ADVANCED_FIELDS[i]) {
+                        if (i != 2) {
+                            if (CHECKBOXES[i]) {
+                                object bla = newValues[FIELDS[i]];
+                                cmd.Parameters.AddWithValue(FIELDS[i], ((bool)newValues[FIELDS[i]]) ? "1" : "0");
+                            } else {
+                                cmd.Parameters.AddWithValue(FIELDS[i], MyUtilities.clean(newValues[FIELDS[i]].ToString()));
+                            }
+                        }
+                    }
+                }
+                cmd.Parameters.AddWithValue(FIELDS[0], grid.DataKeys[row.RowIndex][FIELDS[0]]);
+
+                try {
+                    int result = cmd.ExecuteNonQuery();
+                } catch (Exception excep) {
+                    Exception excepNew = new Exception("Error in executing insert query. Command string: " + cmd.CommandText + ". Exception message: " + excep.Message, excep);
+                    throw excepNew;
+                }
+
+                grid.EditIndex = -1;
+                connec.Close();
+                //UpdateSql("UPDATE tblOper SET OpNum = " + opNumber + " WHERE OpNam = '" + opName + "' AND ProdFore = " + prodId + ";");
+                this.SetData();
+
+                if (mode.Equals("Standard")) {
+                    HideAdvancedColumns();
+                }
+
+                string operMessage = GetOperInfoMessage(opName, opNumber, prodId, opId, oldOpName, oldOpNumber);
+                if (!operMessage.Equals("")) {
+                    Master.ShowInfoMessage(operMessage);
+                }
+
+
+                
+                
+            } catch (Exception exp) {
+                logFiles.ErrorLog(exp);
+                try {
+                    connec.Close();
+                    connec = null;
+                } catch { }
+                Master.ShowErrorMessage(DbUse.INSERT_DATA_ERROR_MSG);
+            }
+
+
+
+        }
+
+
+
+    }
+
+    protected override string GetCommandString(int commandType, string[] selectedFields) {
+        string commandString = base.GetCommandString(commandType, selectedFields);
+        if (commandType == Command.SELECT) {
+            int orderIndex = commandString.ToLower().IndexOf(" order by");
+            string order = ";";
+            if (orderIndex > -1) {
+                order = commandString.Substring(orderIndex);
+                commandString = commandString.Substring(0, commandString.ToLower().IndexOf(" order by"));
+            }
+            commandString += " WHERE (OpNam <> 'DOCK' AND OpNam <> 'STOCK' AND Opnam <> 'SCRAP') " + order;
+        }
+        return commandString;
+    }
+
+    protected override string GetCommandString(int commandType) {
+
+        if ((commandType == Command.UPDATE || commandType == Command.INSERT)) {
+            List<string> selectedFields = new List<string>();
+            for (int i = 0; i < FIELDS.Length; i++) {
+                if (i != 2 || commandType == Command.INSERT) {
+                    if (!ADVANCED_FIELDS[i] || mode.Equals("Advanced")) {
+                        selectedFields.Add(FIELDS[i]);
+                    }
+                }
+
+            }
+            return GetCommandString(commandType, selectedFields.ToArray<string>());
+
+        }
+        return GetCommandString(commandType, FIELDS);
+    }
+
+
+    protected override bool InsertRecord(string[] entries) {
+        for (int i = 0; i < entries.Length; i++) {
+            entries[i] = MyUtilities.clean(entries[i]);
+            if (entries[i].Trim().Length > 0) {
+                entries[i] = entries[i].Trim();
+            }
+        }
+        bool wasInserted = false;
+        connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + userDir + MAIN_USER_DATABASE + ";");
+        string command = GetCommandString(Command.INSERT);
+        OleDbCommand cmd = new OleDbCommand(command, connec);
+        OleDbCommand cmd2 = new OleDbCommand("SELECT ProdID, ProdDesc FROM tblprodfore WHERE ProdDesc = '" + entries[0] + "';", connec);
+        OleDbDataAdapter adapter = new OleDbDataAdapter(cmd2);
+        {
+            try {
+                connec.Open();
+                DataTable dt = new DataTable();
+                adapter.Fill(dt);
+
+                int i = 1;
+                for (int j = 0; j < entries.Length && i < FIELDS.Length; j++) {
+                    if (mode.Equals("Standard")) {
+                        while (i < FIELDS.Length && ADVANCED_FIELDS[i]) {
+                            i++;
+                        }
+                    }
+                    if (i == 2) {
+                        cmd.Parameters.AddWithValue(FIELDS[i], dt.Rows[0]["ProdID"]);
+                        i++;
+                        j--;
+                    } else if (i < FIELDS.Length) {
+                        string value = MyUtilities.clean(entries[j]);
+                        if (FIELDS[i].ToLower().Equals("equipdesc")) {
+                            try {
+                                string equipId = GetDatabaseField("EquipID", "EquipDesc", value, "tblequip");
+                            } catch (Exception) {
+                                // exception means invalid equip data 
+                                throw new Exception("Invalid equip data.");
+                            }
+                        }
+                        if (CHECKBOXES[i]) {
+                            value = value.ToLower().Equals("true") ? "1" : "0";
+                        }
+                        if ((FIELDS[i].Equals("LaborDesc") || FIELDS[i].Equals("EquipDesc") || FIELDS[i].Equals("ProdDesc") || FIELDS[i].Equals("OpNam"))) {
+                            value = value.ToUpper();
+                        }
+                        cmd.Parameters.AddWithValue(FIELDS[i], value);
+                        i++;
+                    }
+                }
+                int prodId = int.Parse(dt.Rows[0]["ProdID"].ToString());
+                string opName = MyUtilities.clean(entries[1]).ToUpper();
+                int opNum = Convert.ToInt32(MyUtilities.clean(entries[2]));
+
+                if (opName.Trim().Equals(String.Empty)) {
+                    throw new Exception("Cannot insert oper line. Empty operation name.");
+                }
+                if (opName.Equals("DOCK") || opName.Equals("STOCK") || opName.Equals("SCRAP")) {
+                    throw new Exception("Cannot insert oper line. Attempt to use reserved operation names DOCK, STOCK, SCRAP.");
+                }
+
+                try {
+                    int result = cmd.ExecuteNonQuery();
+                } catch (Exception excep) {
+                    Exception excepNew = new Exception("Error in executing insert query. Command string: " + cmd.CommandText + ". Exception message: " + excep.Message, excep);
+                    throw excepNew;
+                }
+                connec.Close();
+                //UpdateSql("UPDATE tblOper SET OpNum = " + opNum + " WHERE OpNam = '" + opName + "' AND ProdFore = " + prodId + ";");
+                this.SetData();
+                wasInserted = true;
+
+            } catch (Exception exp) {
+                logFiles.ErrorLog(exp);
+                try {
+                    connec.Close();
+                    connec = null;
+                } catch { }
+            }
+        }
+        return wasInserted;
+    }
+
+    protected override void InsertRow(bool goToEdit) {
+        string desc = "";
+        GridViewRow row = grid.FooterRow;
+        Control[] txtControls = new Control[FIELDS.Length];
+        for (int i = 1; i < FIELDS.Length; i++) {
+            txtControls[i] = row.FindControl(TEXT_BOX_IDS[i]);
+            if (txtControls[i] == null) { return; }
+        }
+        connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + userDir + MAIN_USER_DATABASE + ";");
+        string command = GetCommandString(Command.INSERT);
+        OleDbCommand cmd = new OleDbCommand(command, connec);
+        int prodId = -1;
+        string operName = "";
+        int operNum = -1;
+
+
+        try {
+            for (int i = 1; i < txtControls.Length; i++) {
+                string value = "";
+                if (mode.Equals("Advanced") || !ADVANCED_FIELDS[i]) {
+                    if (i == 2) {
+                        OleDbCommand cmd2 = new OleDbCommand("SELECT ProdID, ProdDesc FROM tblprodfore WHERE ProdDesc = '" + MyUtilities.clean(((AjaxControlToolkit.ComboBox)txtControls[1]).Text.Trim()) + "';", connec);
+                        OleDbDataAdapter adapter = new OleDbDataAdapter(cmd2);
+                        DataTable dt = new DataTable();
+                        try {
+                            adapter.Fill(dt);
+                            object id = dt.Rows[0]["ProdID"];
+                            cmd.Parameters.AddWithValue(FIELDS[2], id);
+                            prodId = int.Parse(id.ToString());
+                        } catch (Exception) { }
+                    } else {
+                        if (COMBOS[i]) {
+                            if (((AjaxControlToolkit.ComboBox)txtControls[i]).SelectedItem != null) {
+                                value = ((AjaxControlToolkit.ComboBox)txtControls[i]).SelectedValue;
+                            } else {
+                                value = MyUtilities.clean(((AjaxControlToolkit.ComboBox)txtControls[i]).Text);
+                            }
+                        } else if (CHECKBOXES[i]) {
+                            value = (((CheckBox)txtControls[i]).Checked) ? "1" : "0";
+                        } else {
+                            value = MyUtilities.clean(((TextBox)txtControls[i]).Text);
+                        }
+                        if ((FIELDS[i].Equals("LaborDesc") || FIELDS[i].Equals("EquipDesc") || FIELDS[i].Equals("ProdDesc") || FIELDS[i].Equals("OpNam"))) {
+                            value = value.ToUpper();
+
+                        }
+                        cmd.Parameters.AddWithValue(FIELDS[i], value);
+                    }
+                    if (i == 1) {
+                        desc = value;
+                    }
+                    if (i == 3) {
+                        operName = value;
+                    }
+                    if (i == 4) {
+                        operNum = Convert.ToInt32(value);
+                    }
+                }
+            }
+
+            if (operName.Equals("DOCK") || operName.Equals("STOCK") || operName.Equals("SCRAP")) {
+                throw new Exception("Attempt to use reserved operation names DOCK, STOCK, SCRAP.");
+            }
+
+            connec.Open();
+            int result = cmd.ExecuteNonQuery();
+            connec.Close();
+            //UpdateSql("UPDATE tblOper SET OpNum = " + operNum + " WHERE OpNam = '" + operName + "' AND ProdFore = " + prodId + ";");
+            this.SetData();
+            if (goToEdit) {
+                try {
+                    SetData();
+                    int id = GetOperId(operName, prodId);
+                    GoToEditMode(id);
+                } catch (Exception) { }
+            }
+            string operMessage = GetOperInfoMessage(operName, operNum, prodId);
+            if (!operMessage.Equals("")) {
+                Master.ShowInfoMessage(operMessage);
+            }
+
+        } catch {
+            try {
+                connec.Close();
+                connec = null;
+            } catch { }
+            SaveInsertValues(grid.FooterRow, TEXT_BOX_IDS);
+            Master.ShowErrorMessage(DbUse.INSERT_DATA_ERROR_MSG);
+        }
+
+
+    }
+
+    protected override string GetId(string desc) {
+        return GetDatabaseField(FIELDS[0], FIELDS[1], desc, TABLE_NAME);
+    }
+
+    protected int GetOperId(string operName, int prodId) {
+        int operId = -1;
+        try {
+            string entry;
+            bool adoOpened = DbUse.OpenAdo(conn, GetDirectory() + userDir + MAIN_USER_DATABASE);
+            string commandString = "SELECT OpID FROM tbloper WHERE ProdFore = " + prodId + " AND OpNam = '" + operName + "';";
+            bool adoRecOpened = DbUse.OpenAdoRec(conn, rec, commandString);
+            if (!adoOpened || !adoRecOpened)
+                throw new Exception("Error in opening database/dataset.");
+            entry = rec.Fields["OpID"].Value.ToString();
+            operId = int.Parse(entry);
+        } catch (Exception) {
+            DbUse.CloseAdoRec(rec);
+            DbUse.CloseAdo(conn);
+
+        }
+        return operId;
+    }
+
+    protected override void SetData() {
+        SetTableQueryString();
+        base.SetData();
+        if (grid.FooterRow != null) {
+            AjaxControlToolkit.ComboBox comboProduct = grid.FooterRow.FindControl("comboEdit1") as AjaxControlToolkit.ComboBox;
+            comboProduct.AutoPostBack = false;
+            AjaxControlToolkit.ComboBox comboOper = grid.FooterRow.FindControl("comboEdit2") as AjaxControlToolkit.ComboBox;
+            if (comboProduct != null && comboProduct.Items.Count == 0) {
+                thirdPanel.Visible = false;
+                Master.ShowErrorMessage("No products are defined yet. Please go to the input products page and create a product first.");
+            } else if (comboOper != null && comboOper.Items.Count == 0) {
+                Master.ShowErrorMessage("No operations are defined yet. Please go to the input operations page and create some operation.");
+                thirdPanel.Visible = false;
+
+            }
+            AjaxControlToolkit.ComboBox comboDesc = grid.FooterRow.FindControl("comboEdit5") as AjaxControlToolkit.ComboBox;
+            if (comboDesc != null) {
+                comboDesc.SelectedValue = "NONE";
+                comboDesc.DropDownStyle = AjaxControlToolkit.ComboBoxStyle.DropDownList;
+            }
+        }
+
+    }
+
+    protected bool SameOperNameNumExists(string opName, int prodId, int opNum) {
+        return SameOperNameNumExists(opName, prodId, opNum, -1);
+    }
+
+
+    protected bool SameOperNameNumExists(string opName, int prodId, int opNum, int opId) {
+        return OperDelegate.SameOperNameNumExists(opName, prodId, opNum, opId, GetDirectory() + userDir + MAIN_USER_DATABASE, logFiles);
+
+    }
+
+    protected bool SameOperNameDiffNumExists(string opName, int opNum, int prodId) {
+        return SameOperNameDiffNumExists(opName, opNum, prodId, -1);
+    }
+
+    protected bool SameOperNameDiffNumExists(string opName, int opNum, int prodId, int opId) {
+        return OperDelegate.SameOperNameDiffNumExists(opName, opNum, prodId, opId, GetDirectory() + userDir + MAIN_USER_DATABASE, logFiles);
+    }
+
+    protected bool SameOperNumDiffNameExists(string opName, int opNum, int prodId, int opId) {
+        return OperDelegate.SameOperNumDiffNameExists(opName, opNum, prodId, opId, GetDirectory() + userDir + MAIN_USER_DATABASE, logFiles);
+    }
+
+    protected bool SameOperNumDiffNameExists(string opName, int opNum, int prodId) {
+        return SameOperNumDiffNameExists(opName, opNum, prodId, -1);
+    }
+
+    protected string GetOperInfoMessage(string opName, int opNumber, int prodId, int opId, string oldOpName, int oldOpNum) {
+        string operMessage = "";
+        if ((oldOpName == null || !oldOpName.ToUpper().Equals(opName)) && SameOperNameNumExists(opName, prodId, opNumber, opId)) {
+            operMessage += DbUse.OPER_SECONDARY_MSG + "<br/>";
+        }
+        bool routingWarning = false;
+        if ((oldOpNum != opNumber || (oldOpName == null || !oldOpName.ToUpper().Equals(opName))) && SameOperNameDiffNumExists(opName, opNumber, prodId, opId)) {
+            operMessage += DbUse.OPER_SAME_NAME_DIFF_NUM + "<br/>";
+            routingWarning = true;
+        }
+        if ((oldOpNum != opNumber || (oldOpName == null || !oldOpName.ToUpper().Equals(opName))) && SameOperNumDiffNameExists(opName, opNumber, prodId, opId)) {
+            operMessage += DbUse.OPER_DIFF_NAME_SAME_NUM + "<br/>";
+            routingWarning = true;
+        }
+        if (routingWarning) {
+            operMessage += DbUse.DEFAULT_ROUTING_WARNING;
+        }
+        if (!operMessage.Equals("")) {
+            Master.ShowInfoMessage(operMessage);
+        }
+        return operMessage;
+    }
+
+    protected string GetOperInfoMessage(string opName, int opNumber, int prodId) {
+        return GetOperInfoMessage(opName, opNumber, prodId, -1, null, Int32.MinValue);
+    }
+
+    protected override void grid_RowCommand(object sender, GridViewCommandEventArgs e) {
+        base.grid_RowCommand(sender, e);
+        Button btn = e.CommandSource as Button;
+        if (btn == null) {
+            return;
+        }
+        if (e.CommandName.Equals("Insert") || e.CommandName.Equals("Delete") || e.CommandName.Equals("Update")) {
+            try {
+                SetupDefRoutingWarning();
+            } catch (Exception) { }
+        }
+    }
+
+    protected void SetupDefRoutingWarning() {
+        string userDatabase = GetDirectory() + userDir + DbPage.MAIN_USER_DATABASE;
+        if (OperDelegate.DuplicateOperNamesOrNumbers(userDatabase)) {
+            lblWarnDefRouting.Text = DbUse.DUPLICATE_OPER_WARNING;
+            lblWarnDefRouting.Visible = true;
+        } else {
+            lblWarnDefRouting.Text = "";
+            lblWarnDefRouting.Visible = false;
+
+        }
+    }
+
+
+}

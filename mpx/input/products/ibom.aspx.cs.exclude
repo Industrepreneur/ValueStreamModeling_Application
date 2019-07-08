@@ -1,0 +1,1017 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Data;
+using System.Data.OleDb;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+
+public partial class P_IBOM : InputGridPage {
+
+    ProductDelegatePage helperProduct;
+    
+    private string[] TBL_IBOM_HEADERS = { "Parent", "Component", "Units per Assembly" };
+    private string[] TBL_IBOM_FIELDS = { "ParentName", "compName", "UPA" };
+
+    private HiddenField hdnCopyMode;
+
+    protected static class CopyMode {
+        public const int ASSEMBLY = 0;
+        public const int ALL_IBOM = 1;
+    }
+
+    protected string IbomStringHeaders {
+        get {
+            if (ViewState["IbomStringHeaders"] == null) {
+                ViewState["IbomStringHeaders"] = "";
+            }
+            return (string)ViewState["IbomStringHeaders"];
+        }
+        set { ViewState["IbomStringHeaders"] = value; }
+    }
+
+    protected string IbomString {
+        get {
+            if (ViewState["IbomString"] == null) {
+                ViewState["IbomString"] = "";
+            }
+            return (string)ViewState["IbomString"];
+        }
+        set { ViewState["IbomString"] = value; }
+    }
+
+    public P_IBOM() {
+        PAGENAME = "/input/products/ibom.aspx";
+        featureHelper = new IbomDelegate();
+        int value = 4;
+        helperProduct = new ProductDelegatePage(value);
+    }
+
+    protected void Page_Load(object sender, EventArgs e) {
+        grid.Columns[0].Visible = false;
+        grid.ShowFooter = false;
+        base.Page_Load(sender, e);
+        if (!Page.IsPostBack) {
+            SetIBOMStructureData();
+            SetAllowableComponentData();
+        }
+
+    }
+
+    private void InitializeComponent() {
+        pnlMainGrid = gridPanel;
+        FillIBOMStructure();
+        FillAllowableComponents();
+
+    }
+
+    protected override void SetData()
+    {
+        {
+            ClassE calc = new ClassE(GetDirectory() + userDir);
+
+            calc.setGlobalVar();
+            calc.runsql("DELETE * FROM tblbomTree;");
+            if (dropListProducts.Items.Count > 0 && dropListProducts.SelectedItem == null)
+            {
+                dropListProducts.SelectedIndex = 0;
+            }
+            try
+            {
+
+                calc.MakeIbomTree(0, int.Parse(dropListProducts.SelectedValue), 0);
+            }
+            catch (Exception) { }
+            calc.Close();
+        }
+
+
+        if (!checkAllSubComponents.Checked)
+        {
+            //tableQueryString += " WHERE Show = -1";
+            tableQueryString += " WHERE Level = 1";
+        }
+        else
+        {
+            tableQueryString += " WHERE Level >= 1";
+        }
+   
+        base.SetData();
+    }
+
+    protected void SetIBOMStructureData() {
+        if (dropListProducts2.Items.Count == 0) {
+            try {
+                dropListProducts2.DataBind();
+            } catch (Exception) {
+                Master.ShowErrorMessage();
+            }
+        }
+
+        if (dropListProducts2.Items.Count > 0 && dropListProducts2.SelectedItem == null) {
+            dropListProducts2.SelectedIndex = 0;
+        }
+        OleDbConnection connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + userDir + MAIN_USER_DATABASE + ";");
+        string commandRouting = "SELECT tblIbom.*  FROM tblIbom";
+        if (dropListProducts.Items.Count > 0)
+        {
+            commandRouting += " WHERE (((tblIbom.ParentID)=" + dropListProducts2.SelectedValue + ")) ORDER BY CompID";
+        }
+        commandRouting += ";";
+        OleDbCommand cmd = new OleDbCommand(commandRouting, connec);
+        OleDbDataAdapter adapter = new OleDbDataAdapter(cmd); 
+        {
+            try {
+                connec.Open();
+                DataTable dt = new DataTable();
+                adapter.Fill(dt);
+                bool empty = false;
+                if (dt.Rows.Count == 0) {
+                    empty = true;
+                    DataRow dr = dt.NewRow();
+                    dt.Rows.Add(dr);
+                }
+
+                DataView dv = dt.DefaultView;
+                gridBuildIbom.DataSource = dv;
+                gridBuildIbom.DataBind();
+                if (empty) {
+                    // hide the buttons
+                    GridViewRow row = gridBuildIbom.Rows[0];
+                    
+                    Button button = row.FindControl("btnEdit") as Button;
+                    if (button != null) {
+                        button.Visible = false;
+                    }
+                    button = row.FindControl("btnDelete") as Button;
+                    if (button != null) {
+                        button.Visible = false;
+                    }
+                }
+                //Set default value
+                TextBox txtUPA = gridBuildIbom.FooterRow.FindControl("txtUPA") as TextBox;
+                if (txtUPA != null && txtUPA.Text.Trim().Equals(String.Empty)) {
+                    txtUPA.Text = "1";
+                }
+                connec.Close();
+            } catch (Exception ex) {
+                try {
+                    connec.Close();
+                    connec = null;
+                } catch { }
+                string message = ex.Message;
+            }
+        }
+    }
+
+    protected void SetAllowableComponentData() {
+        {
+            ClassE calc = new ClassE(GetDirectory() + userDir);
+            calc = new ClassE(GetDirectory() + userDir);
+            calc.runsql("DELETE * FROM tblPossibleComp;");
+            try {
+                calc.MakePossibleTable(int.Parse(dropListProducts2.SelectedValue));
+            } catch (Exception) { }
+            calc.Close();
+        }
+
+        OleDbConnection connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + userDir + MAIN_USER_DATABASE + ";");
+        string commandRouting = "SELECT tblPossibleComp.* from tblPossibleComp ORDER BY ProdDesc;";
+        OleDbCommand cmd = new OleDbCommand(commandRouting, connec);
+        OleDbDataAdapter adapter = new OleDbDataAdapter(cmd); //
+        {
+            try {
+                connec.Open();
+                DataTable dt = new DataTable();
+                adapter.Fill(dt);
+                DataView dv = dt.DefaultView;
+                gridAllowableComponents.DataSource = dv;
+                gridAllowableComponents.DataBind();
+
+                connec.Close();
+            } catch (Exception ex) {
+                try {
+                    connec.Close();
+                    connec = null;
+                } catch { }
+                string message = ex.Message;
+            }
+        }
+    }
+
+
+    protected override void OnInit(EventArgs e) {
+        InitializeComponent();
+        pnlMenu.Controls.Add(new LiteralControl("<h2>Products</h2>"));
+        base.OnInit(e);
+        if (!LocalTablesLinked()) {
+            ResetModelGoToModels();
+        }
+        if (IsWhatifMode()) {
+            Response.Redirect("whatif_" + PAGENAME);
+        }
+        helperProduct.SetMenuContainer(pnlMenu);
+        helperProduct.OnInit(e);
+        string dataFile = GetDirectory() + userDir + MAIN_USER_DATABASE;
+        srcProductsList.DataFile = dataFile;
+        srcProductStructure.DataFile = dataFile;
+        try
+        {
+            dropListProducts.DataBind();
+        }
+        catch (Exception)
+        {
+            Master.ShowErrorMessage();
+        }
+        Control buttondiv = getButtonDiv();
+        Button btnCopyTable = buttondiv.FindControl(PageControls.BTN_COPY_TABLE) as Button;
+        extenderCopy.TargetControlID = copyAllDummy.ID;
+        btnCopyTable.Click += btnCopyTable_Click;
+
+        hdnCopyMode = new HiddenField();
+        pnlCopyTable.Controls.Add(hdnCopyMode);
+
+        TBWE2.TargetControlID = txtInsertTable.ID;
+
+        tableSync = new TableSynchronization(userDir);
+
+        //string sheet = "Cheat Sheat IBOM Page";
+        //Master.SetHelpSheet(sheet + ".pdf", sheet);
+
+    }
+
+    protected override bool LocalTablesLinked() {
+        if (!UpdateSql("SELECT ProdID FROM tblProdfore;")) {
+            return false;
+        }
+        return true;
+    }
+
+    protected void btnCopyTable_Click(object sender, EventArgs e) {
+        if (rdbtnTableWithHeaders.Checked) {
+            txtCopyTable.Text = TableStringHeaders + TableString;
+        } else {
+            txtCopyTable.Text = TableString;
+        }
+        boxCheckAll.Checked = false;
+        hdnCopyMode.Value = "" + CopyMode.ASSEMBLY;
+        extenderCopy.Show();
+
+    }
+
+    protected override Control getButtonDiv()
+    {
+        return buttondiv;
+    }
+
+    protected override Panel GetSecondPanel()
+    {
+        return secondPanel;
+    }
+
+    protected override Panel GetThirdPanel()
+    {
+        return thirdPanel;
+    }
+
+    protected override Panel GetFourthPanel()
+    {
+        return fourthPanel;
+    }
+
+    protected override Panel GetFifthPanel()
+    {
+        return fourthPanel;
+    }
+
+    protected void dropListProducts2_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        string value = dropListProducts2.SelectedItem.Text;
+        this.SetIBOMStructureData();
+        this.SetAllowableComponentData();
+    }
+
+    protected void dropListProducts_SelectedIndexChanged(object sender, EventArgs e)
+    {
+        string value = dropListProducts.SelectedValue;
+        this.SetData();
+    }
+
+    protected void gridRouting_RowEditing(object sender, GridViewEditEventArgs e)
+    {
+
+    }
+    protected void gridRouting_RowCancelingEdit(object sender, GridViewCancelEditEventArgs e)
+    {
+
+    }
+    protected void gridRouting_RowUpdating(object sender, GridViewUpdateEventArgs e)
+    {
+
+    }
+
+    protected void gridRouting_RowDataBound(object sender, GridViewRowEventArgs e)
+    {
+        if (e.Row.RowType == DataControlRowType.Footer)
+        {
+            AjaxControlToolkit.ComboBox ddl = (AjaxControlToolkit.ComboBox)e.Row.FindControl("txtCompName");
+            FillAllowableComponentsDdl(ddl);
+
+            Button btnToClick = e.Row.Cells[0].FindControl(GridViewTemplate.BTN_INSERT) as Button;
+            string tooltip = "Double-click to add component";
+            if (btnToClick != null)
+            {
+                string btnJavascript = ClientScript.GetPostBackClientHyperlink(
+                btnToClick, "");
+                for (int columnIndex = 1; columnIndex <
+                e.Row.Cells.Count; columnIndex++)
+                {
+                    // Add the column index as the event argument parameter
+                    string js = btnJavascript.Insert(btnJavascript.Length - 2,
+                        columnIndex.ToString());
+                    // Add this javascript to the onclick Attribute of the cell
+                    e.Row.Cells[columnIndex].Attributes["ondblclick"] = js;
+                    // Add a cursor style to the cells
+                    e.Row.Cells[columnIndex].Attributes["style"] +=
+                        "cursor:pointer;cursor:hand;";
+                    e.Row.Cells[columnIndex].ToolTip = tooltip;
+                    try
+                    {
+                        Control control = e.Row.Cells[columnIndex].FindControl(BUILD_IBOM_GRID_IDS[columnIndex]);
+                        if (control is TextBox)
+                        {
+                            (control as TextBox).Attributes.Add("onkeydown", "doFocus('" + btnToClick.ClientID + "', event);");
+                        }
+                        else if (control is AjaxControlToolkit.ComboBox)
+                        {
+                            TextBox textBox = (control as AjaxControlToolkit.ComboBox).FindControl(control.ID + "_TextBox") as TextBox;
+                            if (textBox != null)
+                            {
+                                textBox.Attributes.Add("onkeydown", "doFocus('" + btnToClick.ClientID + "', event);");
+                            }
+
+                        }
+                    }
+                    catch (Exception) { }
+
+
+                }
+            }
+        }
+        if (e.Row.RowType == DataControlRowType.DataRow)
+        {
+            Button btnToClick = e.Row.Cells[0].FindControl(GridViewTemplate.BTN_EDIT_ROUTING) as Button;
+            string tooltip = "Double-click to edit component";
+            if (((e.Row.RowState & DataControlRowState.Edit) > 0))
+            {
+                btnToClick = e.Row.Cells[0].FindControl(GridViewTemplate.BTN_UPDATE) as Button;
+                tooltip = "Double-click to update component";
+                /*e.Row.Attributes["ondblclick"] = Page.ClientScript.GetPostBackClientHyperlink(grid, "Update$" + e.Row.RowIndex);
+                e.Row.Attributes["style"] = "cursor:normal;";
+                e.Row.ToolTip = "Double-click to update row";*/
+            }
+            if (btnToClick != null)
+            {
+                string btnJavascript = ClientScript.GetPostBackClientHyperlink(
+                btnToClick, "");
+                for (int columnIndex = 1; columnIndex <
+                e.Row.Cells.Count; columnIndex++)
+                {
+                    // Add the column index as the event argument parameter
+                    string js = btnJavascript.Insert(btnJavascript.Length - 2,
+                        columnIndex.ToString());
+                    // Add this javascript to the onclick Attribute of the cell
+                    e.Row.Cells[columnIndex].Attributes["ondblclick"] = js;
+                    // Add a cursor style to the cells
+                    e.Row.Cells[columnIndex].Attributes["style"] +=
+                        "cursor:pointer;cursor:hand;";
+                    e.Row.Cells[columnIndex].ToolTip = tooltip;
+                    if (((e.Row.RowState & DataControlRowState.Edit) > 0))
+                    {
+                        try
+                        {
+                            Control control = e.Row.Cells[columnIndex].FindControl(BUILD_IBOM_GRID_IDS[columnIndex]);
+                            if (control is TextBox)
+                            {
+                                (control as TextBox).Attributes.Add("onkeydown", "doFocus('" + btnToClick.ClientID + "', event);");
+                            }
+                            else if (control is AjaxControlToolkit.ComboBox)
+                            {
+                                TextBox textBox = (control as AjaxControlToolkit.ComboBox).FindControl(control.ID + "_TextBox") as TextBox;
+                                if (textBox != null)
+                                {
+                                    textBox.Attributes.Add("onkeydown", "doFocus('" + btnToClick.ClientID + "', event);");
+                                }
+
+                            }
+                        }
+                        catch (Exception) { }
+                    }
+                }
+            }
+
+        }
+
+    }
+
+    protected void FillAllowableComponentsDdl(AjaxControlToolkit.ComboBox ddl)
+    {
+        {
+            ClassE calc = new ClassE(GetDirectory() + userDir);
+            calc = new ClassE(GetDirectory() + userDir);
+            calc.runsql("DELETE tblPossibleComp.* from tblPossibleComp;");
+            try
+            {
+                calc.MakePossibleTable(int.Parse(dropListProducts2.SelectedValue));
+            }
+            catch (Exception) { }
+            calc.Close();
+        }
+
+        OleDbConnection connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + userDir + MAIN_USER_DATABASE + ";");
+        string commandRouting = "Select tblPossibleComp.* from tblPossibleComp ORDER BY ProdDesc;";
+        OleDbCommand cmd = new OleDbCommand(commandRouting, connec);
+        OleDbDataAdapter adapter = new OleDbDataAdapter(cmd); //
+        {
+            try
+            {
+                connec.Open();
+                DataTable ds = new DataTable();
+                adapter.Fill(ds);
+                if (ddl != null)
+                {
+                    ddl.Items.Clear();
+                    for (int i = 0; i < ds.Rows.Count; i++)
+                    {
+                        ListItem item = new ListItem(ds.Rows[i]["ProdDesc"].ToString(), ds.Rows[i]["ProdID"].ToString());
+                        ddl.Items.Add(item);
+                    }
+                }
+                connec.Close();
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    connec.Close();
+                    connec = null;
+                }
+                catch { }
+                string message = ex.Message;
+            }
+        }
+    }
+
+    protected void gridRouting_RowDeleting(object sender, GridViewDeleteEventArgs e)
+    {
+
+    }
+
+    protected void gridRouting_RowCommand(object sender, GridViewCommandEventArgs e)
+    {
+        Button btnSender = e.CommandSource as Button;
+        GridViewRow row = btnSender.NamingContainer as GridViewRow;
+        if (e.CommandName.Equals("Edit"))
+        {
+            gridBuildIbom.EditIndex = row.RowIndex;
+        }
+        else if (e.CommandName.Equals("Remove"))
+        {
+            OleDbConnection connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + userDir + MAIN_USER_DATABASE + ";");
+            OleDbCommand cmd = new OleDbCommand("DELETE FROM [tblIbom] WHERE (IbomID = @IbomID)", connec);
+            cmd.Parameters.AddWithValue("IbomID", gridBuildIbom.DataKeys[row.RowIndex]["IbomID"]);
+
+            try
+            {
+                connec.Open();
+                int result = cmd.ExecuteNonQuery();
+                gridBuildIbom.EditIndex = -1;
+                connec.Close();
+
+            }
+            catch
+            {
+                try
+                {
+                    connec.Close();
+                    connec = null;
+                }
+                catch { }
+            }
+        }
+        else if (e.CommandName.Equals("Add"))
+        {
+            AjaxControlToolkit.ComboBox txtCompName = gridBuildIbom.FooterRow.FindControl("txtCompName") as AjaxControlToolkit.ComboBox;
+            TextBox txtUPA = gridBuildIbom.FooterRow.FindControl("txtUPA") as TextBox;
+            try
+            {
+                connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + userDir + MAIN_USER_DATABASE + ";");
+                OleDbCommand comm = new OleDbCommand("SELECT ProdID, ProdDesc FROM tblPossibleComp WHERE ProdDesc = '" + MyUtilities.clean(txtCompName.SelectedItem.Text).Trim() + "';", connec);
+                OleDbCommand cmd = new OleDbCommand("INSERT into tblIbom (compName, UPA, ParentName, CompID, flag, ParentID) VALUES ( ?, ?, ?, ?, ?, ?);", connec);
+                {
+                    try
+                    {
+                        connec.Open();
+                        OleDbDataAdapter adapter = new OleDbDataAdapter(comm);
+                        DataTable dt = new DataTable();
+                        adapter.Fill(dt);
+                        cmd.CommandType = CommandType.Text;
+                        cmd.Parameters.AddWithValue("compName", txtCompName.SelectedItem.Text);
+                        cmd.Parameters.AddWithValue("UPA", txtUPA.Text);
+                        cmd.Parameters.AddWithValue("ParentName", dropListProducts2.SelectedItem.Text);
+                        cmd.Parameters.AddWithValue("CompID", dt.Rows[0]["ProdID"]);
+                        cmd.Parameters.AddWithValue("flag", 1);
+                        cmd.Parameters.AddWithValue("ParentID", dropListProducts2.SelectedValue);
+                        cmd.Parameters.AddWithValue("ProdDesc", dropListProducts2.SelectedItem.Text);
+
+                        int result = cmd.ExecuteNonQuery();
+                        gridBuildIbom.EditIndex = -1;
+                        connec.Close();
+
+
+                    }
+                    catch
+                    {
+                        try
+                        {
+                            connec.Close();
+                            connec = null;
+                        }
+                        catch { }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                Master.ShowErrorMessage(DbUse.INSERT_DATA_ERROR_MSG);
+            }
+        }
+        else if (e.CommandName.Equals("CancelUpdate"))
+        {
+            gridBuildIbom.EditIndex = -1;
+        }
+        else if (e.CommandName.Equals("Update"))
+        {
+            var newValues = GetValues(row);
+            connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + userDir + MAIN_USER_DATABASE + ";");
+            OleDbCommand cmd = new OleDbCommand("UPDATE tblIbom SET UPA = ?  WHERE IbomID = ?;", connec);
+
+            {
+                try
+                {
+                    connec.Open();
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.AddWithValue("UPA", newValues["UPA"]);
+                    cmd.Parameters.AddWithValue("IbomID", gridBuildIbom.DataKeys[row.RowIndex]["IbomID"]);
+
+                    int result = cmd.ExecuteNonQuery();
+                    gridBuildIbom.EditIndex = -1;
+                    connec.Close();
+
+                }
+                catch
+                {
+                    try
+                    {
+                        connec.Close();
+                        connec = null;
+                    }
+                    catch { }
+                    Master.ShowErrorMessage("An error has occured and the data could not get updated.");
+                }
+            }
+        }
+        //RefreshParentProducts();
+        this.SetData();
+        this.SetAllowableComponentData();
+        SetIBOMStructureData();
+        if (e.CommandName.Equals("Edit"))
+        {
+            try
+            {
+                //int _rowIndex = int.Parse(e.CommandArgument.ToString());
+                int _columnIndex = int.Parse(Request.Form["__EVENTARGUMENT"]);
+                Control editControl = gridBuildIbom.Rows[row.RowIndex].FindControl(BUILD_IBOM_GRID_IDS[_columnIndex]) as Control;
+                // focus on the double-clicked control
+                if (editControl != null && (editControl is TextBox || editControl is AjaxControlToolkit.ComboBox || editControl is CheckBox))
+                {
+                    editControl.Focus();
+
+                }
+
+            }
+            catch (Exception)
+            {
+
+            }
+
+        }
+    }
+
+    private string[] BUILD_IBOM_GRID_IDS = { null, "txtCompName", "txtUPA" };
+
+    private void FillIBOMStructure()
+    {
+
+        TemplateField template = new TemplateField();
+        GridViewTemplate itemTemplate;
+
+        itemTemplate = new GridViewTemplate(ListItemType.Item, GridViewTemplate.DATA, "compName", "lblCompName");
+        template.ItemTemplate = new CompiledBindableTemplateBuilder(delegate (Control container)
+        {
+            itemTemplate.InstantiateIn(container);
+        },
+            delegate (Control container)
+            {
+                OrderedDictionary dict = new OrderedDictionary();
+                dict["compName"] = ((Label)container.FindControl("lblCompName")).Text;
+                dict["UPA"] = ((Label)container.FindControl("lblUPA")).Text;
+                return dict;
+            });
+
+        List<string> opers = new List<string>();
+        opers.Add("ProdID");
+        opers.Add("ProdDesc");
+        GridViewTemplate editItemTemplate = new GridViewTemplate(ListItemType.Item, GridViewTemplate.DATA, "compName", "lblCompName");
+        template.EditItemTemplate = new CompiledBindableTemplateBuilder(delegate (Control container)
+        {
+            editItemTemplate.InstantiateIn(container);
+        },
+            delegate (Control container)
+            {
+                OrderedDictionary dict = new OrderedDictionary();
+                dict["compName"] = ((Label)container.FindControl("lblCompName")).Text;
+                dict["UPA"] = ((TextBox)container.FindControl("txtUPA")).Text;
+                return dict;
+            });
+
+        template.FooterTemplate = new GridViewTemplate(ListItemType.Footer, GridViewTemplate.COMBODATA, "compName", "txtCompName", opers);
+        template.HeaderTemplate = new GridViewTemplate("Component", "Name of the component for the product selected in the above drop-down list.", "lblCompName");
+        template.SortExpression = "compName";
+        gridBuildIbom.Columns.Add(template);
+        /************************************************************/
+
+        TemplateField template2 = new TemplateField();
+        GridViewTemplate itemTemplate2 = new GridViewTemplate(ListItemType.Item, GridViewTemplate.DATA, "UPA", "lblUPA");
+        template2.ItemTemplate = new CompiledBindableTemplateBuilder(delegate (Control container)
+        {
+            itemTemplate2.InstantiateIn(container);
+        },
+            delegate (Control container)
+            {
+                OrderedDictionary dict = new OrderedDictionary();
+                dict["UPA"] = ((Label)container.FindControl("lblUPA")).Text;
+                dict["compName"] = ((Label)container.FindControl("lblCompName")).Text;
+                return dict;
+            });
+
+        GridViewTemplate editTemplate2 = new GridViewTemplate(ListItemType.EditItem, GridViewTemplate.DATA, "UPA", "txtUPA");
+        template2.EditItemTemplate = new CompiledBindableTemplateBuilder(delegate (Control container)
+        {
+            editTemplate2.InstantiateIn(container);
+        },
+            delegate (Control container)
+            {
+                OrderedDictionary dict = new OrderedDictionary();
+                dict["UPA"] = ((TextBox)container.FindControl("txtUPA")).Text;
+                dict["compName"] = ((Label)container.FindControl("lblCompName")).Text;
+                return dict;
+            });
+
+        template2.FooterTemplate = new GridViewTemplate(ListItemType.Footer, GridViewTemplate.DATA, "UPA", "txtUPA");
+        template2.HeaderTemplate = new GridViewTemplate("Units per Parent Product Assembly", "Number of units needed for the next level of assembly.", "lblUPA");
+        template2.SortExpression = "UPA";
+        gridBuildIbom.Columns.Add(template2);
+
+        //gridRouting.Columns[0].Visible = false;
+    }
+
+    private void FillAllowableComponents()
+    {
+
+        TemplateField template = new TemplateField();
+        GridViewTemplate itemTemplate;
+
+        itemTemplate = new GridViewTemplate(ListItemType.Item, GridViewTemplate.DATA, "ProdDesc", "lblProdDesc");
+        template.ItemTemplate = new CompiledBindableTemplateBuilder(delegate (Control container)
+        {
+            itemTemplate.InstantiateIn(container);
+        },
+            delegate (Control container)
+            {
+                OrderedDictionary dict = new OrderedDictionary();
+                dict["ProdDesc"] = ((Label)container.FindControl("ProdDesc")).Text;
+                return dict;
+            });
+
+
+
+        template.HeaderText = "Allowable Components";
+        template.SortExpression = "ProdDesc";
+        gridAllowableComponents.Columns.Add(template);
+        /************************************************************/
+
+
+    }
+    protected void gridAllowableComponents_RowCommand(object sender, GridViewCommandEventArgs e)
+    {
+        Button btnSender = e.CommandSource as Button;
+        GridViewRow row = btnSender.NamingContainer as GridViewRow;
+        if (e.CommandName.Equals("Add"))
+        {
+            gridBuildIbom_AddRow(row);
+            //RefreshParentProducts();
+            this.SetData();
+            this.SetAllowableComponentData();
+            SetIBOMStructureData();
+        }
+    }
+    protected void btnAddAll_Click(object sender, EventArgs e)
+    {
+        foreach (GridViewRow row in gridAllowableComponents.Rows)
+        {
+            gridBuildIbom_AddRow(row);
+        }
+        //RefreshParentProducts();
+        this.SetData();
+        this.SetAllowableComponentData();
+        SetIBOMStructureData();
+    }
+
+    //protected void RefreshParentProducts()
+    //{
+    //    try
+    //    {
+    //        string selectedValue = null;
+    //        if (dropListProducts.Items.Count > 0)
+    //        {
+    //            selectedValue = dropListProducts.SelectedValue;
+    //        }
+    //        dropListProducts.DataBind();
+    //        if (dropListProducts.Items.Count > 0)
+    //        {
+    //            dropListProducts.SelectedIndex = 0;
+    //            if (selectedValue != null)
+    //            {
+    //                dropListProducts.SelectedValue = selectedValue;
+    //            }
+    //        }
+    //    }
+    //    catch (Exception) { }
+    //}
+
+    protected void gridBuildIbom_AddRow(GridViewRow newComponentRow)
+    {
+        Label txtProdDesc = newComponentRow.FindControl("lblProdDesc") as Label;
+
+        connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + userDir + MAIN_USER_DATABASE + ";");
+        OleDbCommand cmd = new OleDbCommand("INSERT into tblIbom (compName, UPA, ParentName, CompID, flag, ParentID) VALUES ( ?, ?, ?, ?, ?, ?);", connec);
+        {
+            try
+            {
+                connec.Open();
+
+                cmd.CommandType = CommandType.Text;
+                cmd.Parameters.AddWithValue("compName", txtProdDesc.Text);
+                cmd.Parameters.AddWithValue("UPA", "1");
+                cmd.Parameters.AddWithValue("ParentName", dropListProducts2.SelectedItem.Text);
+                cmd.Parameters.AddWithValue("CompID", gridAllowableComponents.DataKeys[newComponentRow.RowIndex]["ProdID"]);
+                cmd.Parameters.AddWithValue("flag", 1);
+                cmd.Parameters.AddWithValue("ParentID", dropListProducts2.SelectedValue);
+                cmd.Parameters.AddWithValue("ProdDesc", dropListProducts2.SelectedItem.Text);
+
+                int result = cmd.ExecuteNonQuery();
+                gridBuildIbom.EditIndex = -1;
+                connec.Close();
+
+
+            }
+            catch
+            {
+                try
+                {
+                    connec.Close();
+                    connec = null;
+                }
+                catch { }
+            }
+        }
+
+    }
+    protected void btnRemoveAll_Click(object sender, EventArgs e)
+    {
+        foreach (GridViewRow row in gridBuildIbom.Rows)
+        {
+            gridBuildIbom_RemoveRow(row);
+        }
+        //RefreshParentProducts();
+        this.SetData();
+        this.SetAllowableComponentData();
+        SetIBOMStructureData();
+    }
+
+    protected void gridBuildIbom_RemoveRow(GridViewRow row)
+    {
+        OleDbConnection connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + userDir + MAIN_USER_DATABASE + ";");
+        OleDbCommand cmd = new OleDbCommand("DELETE FROM [tblIbom] WHERE (IbomID = @IbomID)", connec);
+        cmd.Parameters.AddWithValue("IbomID", gridBuildIbom.DataKeys[row.RowIndex]["IbomID"]);
+
+        try
+        {
+            connec.Open();
+            int result = cmd.ExecuteNonQuery();
+            gridBuildIbom.EditIndex = -1;
+            connec.Close();
+
+        }
+        catch
+        {
+            try
+            {
+                connec.Close();
+                connec = null;
+            }
+            catch { }
+            Master.ShowErrorMessage("An error has occured and the record could not get deleted.");
+        }
+    }
+    protected void checkAllSubComponents_CheckedChanged(object sender, EventArgs e)
+    {
+        this.SetData();
+    }
+    protected void btnCopyAllIbom_Click(object sender, EventArgs e)
+    {
+        connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + userDir + MAIN_USER_DATABASE + ";");
+        OleDbCommand cmd = new OleDbCommand("SELECT * FROM tblibom", connec);
+        OleDbDataAdapter adapter = new OleDbDataAdapter(cmd);
+        {
+            try
+            {
+                connec.Open();
+                dt = new DataTable();
+                adapter.Fill(dt);
+                connec.Close();
+                for (int i = 0; i < TBL_IBOM_FIELDS.Length; i++)
+                {
+                    IbomStringHeaders += TBL_IBOM_HEADERS[i];
+                    if (i == TBL_IBOM_FIELDS.Length - 1)
+                    {
+                        IbomStringHeaders += "\r\n";
+                    }
+                    else
+                    {
+                        IbomStringHeaders += "\t";
+                    }
+                }
+                for (int j = 0; j < dt.Rows.Count; j++)
+                {
+                    for (int i = 0; i < TBL_IBOM_FIELDS.Length; i++)
+                    {
+                        IbomString += dt.Rows[j][TBL_IBOM_FIELDS[i]].ToString();
+                        if (i == TBL_IBOM_FIELDS.Length - 1)
+                        {
+                            IbomString += "\r\n";
+                        }
+                        else
+                        {
+                            IbomString += "\t";
+                        }
+                    }
+                }
+                if (rdbtnTableWithHeaders.Checked)
+                {
+                    txtCopyTable.Text = IbomStringHeaders + IbomString;
+                }
+                else
+                {
+                    txtCopyTable.Text = IbomString;
+                }
+                boxCheckAll.Checked = false;
+                hdnCopyMode.Value = "" + CopyMode.ALL_IBOM;
+                extenderCopy.Show();
+            }
+            catch (Exception)
+            {
+                try
+                {
+                    connec.Close();
+                    connec = null;
+                }
+                catch { }
+                Master.ShowErrorMessage();
+            }
+        }
+    }
+
+    protected override void rdbtnTable_CheckedChanged(object sender, EventArgs e)
+    {
+        int copyMode;
+        try
+        {
+            copyMode = int.Parse(hdnCopyMode.Value);
+        }
+        catch (Exception)
+        {
+            copyMode = CopyMode.ASSEMBLY;
+        }
+        if (rdbtnTableWithHeaders.Checked)
+        {
+            if (copyMode == CopyMode.ASSEMBLY)
+            {
+                txtCopyTable.Text = TableStringHeaders + TableString;
+            }
+            else
+            {
+                txtCopyTable.Text = IbomStringHeaders + IbomString;
+            }
+        }
+        else
+        {
+            if (copyMode == CopyMode.ASSEMBLY)
+            {
+                txtCopyTable.Text = TableString;
+            }
+            else
+            {
+                txtCopyTable.Text = IbomString;
+            }
+        }
+        boxCheckAll.Checked = false;
+        extenderCopy.Show();
+    }
+
+    protected override bool InsertRecord(string[] entries)
+    {
+        bool inserted = false;
+        try
+        {
+            connec = new OleDbConnection("Provider=Microsoft.Jet.OLEDB.4.0;Data Source= " + GetDirectory() + userDir + MAIN_USER_DATABASE + ";");
+            OleDbCommand comm = new OleDbCommand("SELECT ProdID, ProdDesc FROM tblPossibleComp WHERE ProdDesc = '" + MyUtilities.clean(entries[1]).Trim() + "';", connec);
+            OleDbCommand comm2 = new OleDbCommand("SELECT ProdID, ProdDesc FROM tblprodfore WHERE ProdDesc = '" + MyUtilities.clean(entries[0]).Trim() + "';", connec);
+            OleDbCommand cmd = new OleDbCommand("INSERT into tblIbom (compName, UPA, ParentName, CompID, flag, ParentID) VALUES ( ?, ?, ?, ?, ?, ?);", connec);
+            {
+                try
+                {
+                    connec.Open();
+                    OleDbDataAdapter adapter = new OleDbDataAdapter(comm);
+                    OleDbDataAdapter adapter2 = new OleDbDataAdapter(comm2);
+                    DataTable dt2 = new DataTable();
+                    adapter2.Fill(dt2);
+
+                    {
+                        ClassE calc = new ClassE(GetDirectory() + userDir);
+                        calc = new ClassE(GetDirectory() + userDir);
+                        calc.runsql("DELETE tblPossibleComp.* from tblPossibleComp;");
+                        try
+                        {
+                            calc.MakePossibleTable(int.Parse(dt2.Rows[0]["ProdID"].ToString()));
+                        }
+                        catch (Exception) { }
+                        calc.Close();
+                    }
+
+                    DataTable dt = new DataTable();
+                    adapter.Fill(dt);
+
+                    cmd.CommandType = CommandType.Text;
+                    cmd.Parameters.AddWithValue("compName", MyUtilities.clean(entries[1]).Trim().ToUpper());
+                    cmd.Parameters.AddWithValue("UPA", MyUtilities.clean(entries[2]).Trim());
+                    cmd.Parameters.AddWithValue("ParentName", MyUtilities.clean(entries[0]).Trim().ToUpper());
+                    cmd.Parameters.AddWithValue("CompID", dt.Rows[0]["ProdID"]);
+                    cmd.Parameters.AddWithValue("flag", 1);
+                    cmd.Parameters.AddWithValue("ParentID", dt2.Rows[0]["ProdID"]);
+                    cmd.Parameters.AddWithValue("ProdDesc", dropListProducts2.SelectedItem.Text);
+
+                    int result = cmd.ExecuteNonQuery();
+                    gridBuildIbom.EditIndex = -1;
+                    connec.Close();
+                    inserted = true;
+
+                }
+                catch
+                {
+                    try
+                    {
+                        connec.Close();
+                        connec = null;
+                    }
+                    catch { }
+                }
+            }
+        }
+        catch (Exception) { }
+        return inserted;
+    }
+
+    protected override void btnInsertTable_Click(object sender, EventArgs e)
+    {
+        base.btnInsertTable_Click(sender, e);
+
+        //RefreshParentProducts();
+        this.SetData();
+        this.SetAllowableComponentData();
+        SetIBOMStructureData();
+    }
+}

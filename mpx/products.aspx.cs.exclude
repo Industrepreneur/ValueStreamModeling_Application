@@ -1,0 +1,97 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+
+public partial class products : GridPage {
+
+    public products() {
+        ADVANCED_FIELDS = new string[] { "ProdID", "ProdDesc", "TBatchGather", "Variability", "TransferBatch", "LotSizeFac", "DemandFac", "ProdDept", "EndDemd", "Lotsiz", "makestock", "P1", "P2", "P3", "P4", "ProdComment" };
+        STANDARD_FIELDS = new string[] { "ProdID", "ProdDesc", "EndDemd", "Lotsiz", "ProdComment" };
+        STANDARD_HEADERS = new string[] { null, "Product Name", "End Demand", "Lot Size", "Comment" };
+        ADVANCED_HEADERS = new string[] { null, "Product Name", "Gather of T-Batches", "Variability Multiplier", "Transfer Batch Size", "Lot Size Factor", "Demand Factor", "Group / Dept / Area", "End Demand", "Lot Size", "Make To Stock", "Prod1", "Prod2", "Prod3", "Prod4", "Comment" };
+        FIELDS = STANDARD_FIELDS;
+        HEADERS = STANDARD_HEADERS;
+        InitializeCombos();
+        InitializeCheckboxes();
+        ADVANCED_CHECKBOXES[2] = true;
+        ADVANCED_CHECKBOXES[10] = true;
+        COMBOS = STANDARD_COMBOS;
+        CHECKBOXES = STANDARD_CHECKBOXES;
+        TEXT_BOX_IDS = GetIDs(IDs.TEXT_BOX);
+        LABEL_IDS = GetIDs(IDs.LABEL);
+        TEXT_BOX_IDS2 = GetIDs2(IDs.TEXT_BOX);
+        LABEL_IDS2 = GetIDs2(IDs.LABEL);
+
+        PAGENAME = "products.aspx";
+        TABLE_NAME = "tblprodfore";
+    }
+
+    protected void Page_Load(object sender, EventArgs e) {
+        base.Page_Load(sender, e);
+        
+    }
+
+    private void InitializeComponent() {
+        panel = gridPanel;
+
+    }
+
+
+
+    protected void menuView_Click(object sender, MenuEventArgs e) {
+        int itemNum = int.Parse(e.Item.Value);
+        switch (itemNum) {
+            case 0:
+                productView.SetActiveView(productTable);
+                break;
+            case 1:
+                productView.SetActiveView(productOperRouting);
+                break;
+            case 2:
+                productView.SetActiveView(productOper);
+                break;
+            case 3:
+                productView.SetActiveView(productRouting);
+                break;
+            case 4:
+                productView.SetActiveView(productIBOM);
+                break;
+            default:
+                break;
+        }
+    }
+
+    protected override void OnInit(EventArgs e) {
+        InitializeComponent();
+        base.OnInit(e);
+        string dataFile = GetDirectory() + userDir + "\\" + MAIN_USER_DATABASE;
+        srcProductsList.DataFile = dataFile;
+    }
+
+    protected override Label getLblRow() {
+        return lblRow;
+    }
+
+    protected override Control getButtonDiv() {
+        return buttondiv;
+    }
+
+    protected override Panel GetSecondPanel() {
+        return secondPanel;
+    }
+
+    protected override Panel GetThirdPanel() {
+        return thirdPanel;
+    }
+
+    protected override Panel GetFourthPanel() {
+        return fourthPanel;
+    }
+
+    protected override Panel GetFifthPanel() {
+        return fourthPanel;
+    }
+}

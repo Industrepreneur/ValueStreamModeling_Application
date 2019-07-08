@@ -1,0 +1,27 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+
+/// <summary>
+/// Summary description for TableSyncFlex
+/// </summary>
+public class TableSyncFlex: TableSyncProduct
+{
+	public TableSyncFlex(string userDir): base(userDir)
+	{
+		//
+		// TODO: Add constructor logic here
+		//
+	}
+
+    protected override string GetDirectory() {
+        string helperPage = DbUse.LOGOUT_PAGE;
+        string dir = HttpContext.Current.Request.MapPath(helperPage);
+        dir = dir.Substring(0, dir.IndexOf(FlexAPInamespace.FlexAPI.flexDirectory));
+        dir += "App_Data\\";
+        return dir;
+    }
+
+    
+}

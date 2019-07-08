@@ -1,0 +1,214 @@
+﻿<%@ Page Language="C#" AutoEventWireup="true" CodeFile="mpx_exe_download.aspx.cs" EnableEventValidation="false" MaintainScrollPositionOnPostback="true" Inherits="mpxdemo_client" %>
+
+<%@ Register Assembly="MSCaptcha" Namespace="MSCaptcha" TagPrefix="cc1" %>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head id="Head1" runat="server">
+    <title>Value Stream Model Download</title>
+    <link href="formstyle.css" rel="stylesheet" type="text/css" />
+    <link href='https://fonts.googleapis.com/css?family=Roboto:500,400' rel='stylesheet' type='text/css' />
+    <link href='https://fonts.googleapis.com/css?family=Roboto+Condensed:400,300' rel='stylesheet' type='text/css' />
+    <link href='https://fonts.googleapis.com/css?family=Droid+Serif' rel='stylesheet' type='text/css' />
+    <script type="text/javascript">
+        function HidePopup(popup) {
+            try {
+                $find(popup).hide();
+            } catch (err) {
+
+            }
+
+        }
+
+    </script>
+</head>
+<body>
+    <div class="page shadow">
+        <form id="form1" runat="server">
+            <asp:ScriptManager ID="ScriptManager1" runat="server" />
+
+
+            <div class="content">
+
+                <img class="logo" src="images/logo.png" alt="logo" />
+                <div style="float: right; height: 30px; font-size: 18px; font-weight: bold; margin-right: 10px; font-family: 'Roboto', Verdana;"><span style="color: #b9e0bb;">Build</span><span style="color: #f7b2b3;">-To-</span><span style="color: #b0c8e2;">Demand</span><span style="color: #d7d7d7;">, Inc.</span></div>
+
+                <div class="greenLine"></div>
+                <div class="innerContent">
+                    <h1>MPX Executable Download</h1>
+
+                    <p>
+                        <b>Please provide the following information.</b>
+
+
+                        Asterisk (*) indicates field is required.
+                
+                    The information is for further contact only. It will 
+        not be used for any other <span style="font-family: Times New Roman">commercial 
+        purpose.</span>
+                    </p>
+
+
+                    <table>
+                        <tr>
+                            <td>
+                                <asp:Label class="label" ID="lbl1" runat="server" Text="* Name"></asp:Label>
+                            </td>
+                            <td>
+                                <asp:TextBox ID="txname" CssClass="val" runat="server" Width="200px" MaxLength="200"></asp:TextBox>
+                                <asp:RequiredFieldValidator ID="RequiredFieldValidator1" runat="server" ControlToValidate="txname" ErrorMessage="Name is required."></asp:RequiredFieldValidator>
+
+                            </td>
+                        </tr>
+
+
+                        <tr>
+                            <td>
+                                <asp:Label class="label" ID="Label3" runat="server" Text="* Company"></asp:Label>
+                            </td>
+                            <td>
+                                <asp:TextBox ID="txorganization" CssClass="val" runat="server" Width="341px" MaxLength="200"></asp:TextBox>
+                                <asp:RequiredFieldValidator ID="RequiredFieldValidator3" runat="server" ControlToValidate="txorganization" ErrorMessage="Organization is required."></asp:RequiredFieldValidator>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <asp:Label class="label" ID="Label4" runat="server" Text="Phone number"></asp:Label>
+                            </td>
+                            <td>
+                                <asp:TextBox ID="txphone" CssClass="val" runat="server" Width="200px" MaxLength="200"></asp:TextBox>
+                            </td>
+                        </tr>
+
+
+                        <tr>
+                            <td>
+                                <asp:Label class="label" ID="Label6" runat="server" Text="* Email"></asp:Label>
+                            </td>
+                            <td>
+                                <asp:TextBox ID="txemail" CssClass="val" runat="server" Width="200px" MaxLength="200"></asp:TextBox>
+                                <asp:RequiredFieldValidator ID="RequiredFieldValidator5" runat="server" ControlToValidate="txemail" ErrorMessage="Email is required."></asp:RequiredFieldValidator>
+                            </td>
+                        </tr>
+
+
+
+
+                        <tr>
+                            <td>
+                                <asp:Label class="label" ID="Label11" runat="server" Text="* MPX Serial Number"></asp:Label>
+                            </td>
+                            <td>
+                                <asp:TextBox ID="txserialnumber" CssClass="val" runat="server" Width="200px" MaxLength="200"></asp:TextBox>
+                                <asp:RequiredFieldValidator ID="RequiredFieldValidator2" runat="server" ControlToValidate="txserialnumber" ErrorMessage="MPX Serial Number is required."></asp:RequiredFieldValidator>
+                            </td>
+                        </tr>
+
+
+                    </table>
+
+                    <div class="captchaBox">
+
+
+                        <p>Enter characters you see in the box below:</p>
+
+                        <asp:UpdatePanel ID="pnlCaptcha" UpdateMode="Conditional" runat="server">
+
+                            <ContentTemplate>
+
+                                <div class="captcha">
+                                    <cc1:CaptchaControl
+                                        ID="loginCaptcha"
+                                        CssClass="captchaImage"
+                                        runat="server"
+                                        CaptchaBackgroundNoise="Low"
+                                        CaptchaLength="5"
+                                        CaptchaHeight="60"
+                                        CaptchaWidth="200"
+                                        CaptchaLineNoise="Low"
+                                        CaptchaMinTimeout="0"
+                                        CaptchaMaxTimeout="600"
+                                        FontColor="#111111" />
+                                </div>
+                                <div style="display: block; padding-top: 30px;">
+                                    <asp:ImageButton ID="btnRefresh" runat="server" CausesValidation="false" OnClick="Refresh" Width="30" ImageUrl="Images/refresh2.png" ToolTip="New Image" />
+                                </div>
+
+
+
+                            </ContentTemplate>
+                        </asp:UpdatePanel>
+
+                        <asp:TextBox
+                            ID="txtCaptcha"
+                            TabIndex="3"
+                            Style="display: block; clear: both; width: 196px;"
+                            runat="server">
+                        </asp:TextBox>
+                    </div>
+
+
+                    <div class="buttonDiv">
+                        <asp:LinkButton ID="Submit" CssClass="buttonMain" runat="server" Height="20px" Text="SUBMIT" OnClick="submit_click" />
+                        <asp:LinkButton ID="ClearInput" CssClass="buttonMain" runat="server" Height="20px" CausesValidation="false" Text="CLEAR INPUT" OnClick="clear_click" />
+                        <a href="http://www.build-to-demand.com">Back to Build-To-Demand homepage</a>
+                    </div>
+
+                </div>
+
+            </div>
+            <asp:Panel ID="pnlError" CssClass="errorPopPanel" Width="250" runat="server" Style="display: none">
+                <h3>Error Message</h3>
+
+                <asp:Label ID="lblGeneralError" runat="server">
+                    
+                </asp:Label>
+                <br />
+                <br />
+
+                <asp:Button Style="width: 60px;" ID="btnOkError" runat="server" Text="Ok" OnClientClick="HidePopup('modalPopupErrorBehavior'); return false;" />
+
+
+            </asp:Panel>
+
+            <ajaxToolkit:ModalPopupExtender ID="modalExtenderError" runat="server"
+                TargetControlID="modalDummy"
+                PopupControlID="pnlError"
+                BehaviorID="modalPopupErrorBehavior"
+                BackgroundCssClass="modalBackground"
+                DropShadow="true">
+            </ajaxToolkit:ModalPopupExtender>
+            <div id="modalDummy" runat="server"></div>
+
+            <asp:Panel ID="pnlMessage" CssClass="msgPanel" Width="250" runat="server" Style="display: none">
+                <h3>Info Message</h3>
+                <asp:Label ID="lblInfoMessage" runat="server">
+                    
+                </asp:Label>
+                <br />
+                <br />
+
+                <asp:Button Style="width: 60px;" ID="btnMessageOk" runat="server" OnClientClick="HideMessagePopup('modalPopupMessageBehavior'); return false;" Text="Ok" />
+
+
+            </asp:Panel>
+
+            <ajaxToolkit:ModalPopupExtender ID="modalExtenderMessage" runat="server"
+                TargetControlID="modalDummy2"
+                PopupControlID="pnlMessage"
+                BehaviorID="modalPopupMessageBehavior"
+                BackgroundCssClass="modalBackground"
+                DropShadow="true">
+            </ajaxToolkit:ModalPopupExtender>
+            <div id="modalDummy2" runat="server"></div>
+        </form>
+    </div>
+    <div class="page footer">
+        E-mail: <a href="mailto:Info@Build-To-Demand.com">Info@Build-To-Demand.com</a>
+        <br />
+        Copyright &copy; 2015  Build-To-Demand, Inc.
+    </div>
+</body>
+</html>

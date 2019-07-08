@@ -1,0 +1,33 @@
+﻿<%@ Page Title="" Language="C#" MasterPageFile="~/MasterPage.master" AutoEventWireup="true" CodeFile="results_labor_graph2.aspx.cs" Inherits="results_labor_graph2" %>
+
+<asp:Content ID="Content1" ContentPlaceHolderID="head" runat="Server">
+</asp:Content>
+<asp:Content ID="Content2" ContentPlaceHolderID="ContentPlaceHolder1" runat="Server">
+    <h2>Labor Results</h2>
+    <asp:Panel ID="pnlMenu" runat="server"></asp:Panel>
+    <div id="tabsDiv" class="tabs" runat="server">
+        <div class="datatable">
+            <h3>Equip Waiting-for-Labor Graph</h3>
+            <div id="buttondiv" runat="server"></div>
+
+            <asp:Panel ID="Panel2" runat="server" ScrollBars="Auto">
+                <asp:Chart ID="chart" runat="server">
+                    <Titles>
+                        <asp:Title Text="Equip Waiting-for-Labor Graph" Font="Trebuchet MS, 18pt, style=Bold">
+                        </asp:Title>
+                    </Titles>
+
+                    <Series>
+                    </Series>
+                    <ChartAreas>
+
+                        <asp:ChartArea Name="Results"></asp:ChartArea>
+                    </ChartAreas>
+                </asp:Chart>
+            </asp:Panel>
+        </div>
+
+        <asp:Panel runat="server" ID="sortPanelContainer"></asp:Panel>
+    </div>
+</asp:Content>
+

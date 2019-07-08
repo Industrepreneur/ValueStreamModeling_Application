@@ -1,0 +1,3 @@
+{
+  "extends": "../ZenBuilder/tsconfig.server-hot.base"
+}
