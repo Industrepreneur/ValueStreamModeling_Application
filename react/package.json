@@ -48,7 +48,7 @@
     "react-dom": "^16.3.2",
     "react-fontawesome": "^1.6.1",
     "react-google-maps": "^9.4.5",
-    "react-hot-loader": "^4.1.2",
+    "react-hot-loader": "^3.0.6",
     "react-ink": "^6.2.0",
     "react-load-script": "0.0.6",
     "react-places-autocomplete": "^6.1.3",

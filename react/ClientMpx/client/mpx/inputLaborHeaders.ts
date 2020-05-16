@@ -5,7 +5,9 @@ import {
   IGridColumn,
   _,
   gridUtil,
-} from '@ZenComponents/grid/gridExports'
+} from '@zen-components/grid/gridExports'
+
+import * as headersConfig from './headersConfig'
 
 export function buildHeaders(showAdvanced) {
   let headers: IGridHeader[] = [
@@ -16,6 +18,7 @@ export function buildHeaders(showAdvanced) {
       label: 'ID',
       dataItem: 'laborid',
       width: 40,
+      tag: 'id',
     },
     {
       label: 'Group Name',
@@ -23,24 +26,48 @@ export function buildHeaders(showAdvanced) {
     },
     {
       label: 'Dept',
-      dataItem: 'department',
+      dataItem: 'labordept',
     },
     {
       label: 'Qty',
-      dataItem: 'quantity',
+      dataItem: 'grpsiz',
     },
     {
       label: 'Overtime %',
-      dataItem: 'overtimePercentage',
+      dataItem: 'ot',
     },
     {
       label: 'Inefficiency',
-      dataItem: 'inefficiency',
+      dataItem: 'abst',
     },
     {
       label: 'Comment',
       dataItem: 'comment',
     },
+
+    // {
+    //   label: 'Dept',
+    //   dataItem: 'department',
+    // },
+    // {
+    //   label: 'Qty',
+    //   dataItem: 'quantity',
+    // },
+    // {
+    //   label: 'Overtime %',
+    //   dataItem: 'overtimepercentage',
+    // },
+    // {
+    //   label: 'Inefficiency',
+    //   dataItem: 'inefficiency',
+    // },
+    // {
+    //   label: 'Comment',
+    //   dataItem: 'comment',
+    // },
   ]
+
+  headers = headersConfig.filterHeaders(headers, showAdvanced)
+
   return headers
 }

@@ -1,4 +1,4 @@
-import { _ } from '@ZenComponents/grid/gridExports'
+import { _ } from '@zen-components/grid/gridExports'
 
 // These are for an out-of-date demo
 export function createFakeProductData() {

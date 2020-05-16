@@ -1,19 +1,21 @@
 import * as React from 'react'
-import { Json } from '@ZenComponents/common/Json'
+import { Json } from '@zen-components/common/Json'
 import {
   Grid,
   IGridHeader,
   IGridColumn,
   _,
   gridUtil,
-} from '@ZenComponents/grid/gridExports'
- 
+} from '@zen-components/grid/gridExports'
+
 import * as mpxTableUtil from './mpxTableUtil'
 import * as inputTableHelper from './inputTableHelper'
 import * as inputEquipmentHeaders from './inputEquipmentHeaders'
 
 import { GridTitleBar } from './GridTitleBar'
+import { DialogError } from './DialogError'
 
+const apiName = 'equipment'
 const tableName = 'equipment'
 const idColumn = 'equipid'
 
@@ -24,6 +26,8 @@ export class InputEquipment extends React.Component<{}> {
     selectedRows: [],
     showAdvanced: false,
     headers: [] as IGridHeader[],
+    hasError: false,
+    error: null as string,
   }
 
   componentWillMount() {
@@ -31,7 +35,7 @@ export class InputEquipment extends React.Component<{}> {
   }
 
   _fetch = async () => {
-    let data = await mpxTableUtil.fetchTableJson(tableName)
+    let data = await mpxTableUtil.fetchTableJson(apiName)
     // Filter out NONE row
     data = _.filter(data, c => c.equipdesc !== 'NONE')
     let laborOptions = await mpxTableUtil.selectList('labor', 'labordesc')
@@ -42,10 +46,7 @@ export class InputEquipment extends React.Component<{}> {
     this.setState({ data, laborOptions, headers })
   }
 
-  _onUpdateCell = (newValue: any, column: IGridColumn, dataRow: any) => {
-    console.log('update', newValue, column.header.dataItem, dataRow.id)
-    dataRow[column.header.dataItem] = newValue
-
+  _onUpdateCell = async (newValue: any, column: IGridColumn, dataRow: any) => {
     if (column.header.dataItem === 'equiptypename') {
       // Update our Qty (business logic)
       let newQty = 1
@@ -54,30 +55,22 @@ export class InputEquipment extends React.Component<{}> {
       } else {
         newQty = 1
       }
-      dataRow['grpsiz'] = newQty
-      mpxTableUtil.updateTable(tableName, dataRow[idColumn], 'grpsiz', newQty)
+      await inputTableHelper.updateRow(this, apiName, idColumn, dataRow[idColumn], 'grpsiz', newQty)
     }
 
-    this.setState({ data: this.state.data })
-
-    mpxTableUtil.updateTable(
-      tableName,
-      dataRow[idColumn],
-      column.header.dataItem,
-      newValue
-    )
+    await inputTableHelper.updateRow(this, apiName, idColumn, dataRow[idColumn], column.header.dataItem, newValue)
   }
 
   _onDeleteSelectedRows = async () => {
-    await inputTableHelper.deleteSelectedRows(this, tableName, idColumn)    
+    await inputTableHelper.deleteSelectedRows(this, apiName, idColumn)
   }
 
   _onAddRow = async () => {
-    await inputTableHelper.addNewRow(this, tableName, idColumn)   
+    await inputTableHelper.addNewRow(this, apiName, idColumn)
   }
 
   _onSelectRow = (dataRow, isSelected, mode) => {
-    inputTableHelper.selectRow(this, dataRow, isSelected, mode)  
+    inputTableHelper.selectRow(this, dataRow, isSelected, mode)
   }
 
   _onToggleShowAdvanced = () => {
@@ -90,7 +83,9 @@ export class InputEquipment extends React.Component<{}> {
     this.setState({ showAdvanced, headers })
   }
 
-
+  _onClose_dialogError = () => {
+    this.setState({ hasError: false })
+  }
 
   render() {
     return (
@@ -111,6 +106,7 @@ export class InputEquipment extends React.Component<{}> {
           selectedRows={this.state.selectedRows}
           onSelectRow={this._onSelectRow}
         />
+        <DialogError isOpen={this.state.hasError} error={this.state.error} onClose={this._onClose_dialogError} />
         {/* <Json data={this.state.headers} /> */}
         {/*  
         <Json data={this.state.laborOptions} />

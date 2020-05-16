@@ -1,4 +1,4 @@
-import * as serverHot from '../ZenBuilder/server-hot/serverHot'
+import * as serverHot from '../zen-builder/server-hot/serverHot'
 import webpackConfig from './webpack.config.dev'
 serverHot.createServer({
   dirName: __dirname,

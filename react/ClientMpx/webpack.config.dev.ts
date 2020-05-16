@@ -1,4 +1,4 @@
-import * as webpackConfigBuilder from '../ZenBuilder/webpackConfigBuilder'
+import * as webpackConfigBuilder from '../zen-builder/webpackConfigBuilder'
 import * as path from 'path'
 const config = webpackConfigBuilder.createConfig({
   dirName: __dirname, 

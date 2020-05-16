@@ -4,7 +4,7 @@ import Button from 'material-ui/Button'
 import { FormGroup, FormControlLabel } from 'material-ui/Form'
 import Switch from 'material-ui/Switch'
 
-import { FaIcon } from '@ZenComponents/common/FaIcon'
+import { FaIcon } from '@zen-components/common/FaIcon'
 
 import { DialogDeleteConfirmation } from './DialogDeleteConfirmation'
 
@@ -12,6 +12,7 @@ export class GridTitleBar extends React.Component<{
   title: string
   showAdvanced: boolean
   onToggleShowAdvanced: () => void
+  onBack?: () => void,
   onAdd: () => void
   onDeleteSelected: () => void
   hasSelected: boolean
@@ -60,6 +61,16 @@ export class GridTitleBar extends React.Component<{
           </div>
         </div>
         <div>
+
+          {
+            this.props.onBack && (
+              <Button variant="flat" color="primary" onClick={this.props.onBack}>
+                <FaIcon icon="chevron-left" />
+                &nbsp; Back
+          </Button>
+            )
+          }
+
           <Button variant="flat" color="primary" onClick={this.props.onAdd}>
             <FaIcon icon="plus" />
             &nbsp; Add

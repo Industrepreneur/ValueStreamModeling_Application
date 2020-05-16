@@ -1,12 +1,12 @@
 {
-  "extends": "../ZenBuilder/tsconfig.client.base",
+  "extends": "../zen-builder/tsconfig.client.base",
   
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
       "Utilities/*": ["src/utilities/*"],
       "components/*": ["client/components/*"],
-      "@ZenComponents/*": ["../ZenComponents/*"]
+      "@zen-components/*": ["../zen-components/*"]
     }
   },
   "include": ["./client/AppIndex.tsx"]

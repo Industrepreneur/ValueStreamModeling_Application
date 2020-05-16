@@ -1,12 +1,18 @@
 import * as React from 'react'
-import { Grid, IGridHeader, IGridColumn, _, gridUtil, } from '@ZenComponents/grid/gridExports'
-
+import { Grid, IGridHeader, IGridColumn, _, gridUtil, } from '@zen-components/grid/gridExports'
+import * as paramsParser from '@zen-components/util/paramsParser'
 import * as mpxTableUtil from './mpxTableUtil'
 import * as inputTableHelper from './inputTableHelper'
 import * as inputProductsHeaders from './inputProductsHeaders'
 
-import { GridTitleBar } from './GridTitleBar'
+import { InputProductsRoutings } from './InputProductsRoutings'
+import { InputProductsIbom } from './InputProductsIbom'
+import { InputProductsOperations } from './InputProductsOperations'
 
+import { GridTitleBar } from './GridTitleBar'
+import { DialogError } from './DialogError'
+
+const apiName = 'products'
 const tableName = 'products'
 const idColumn = 'prodid'
 
@@ -16,6 +22,8 @@ export class InputProducts extends React.Component<{}, {}> {
     headers: [] as IGridHeader[],
     data: [],
     selectedRows: [],
+    hasError: false,
+    error: null as string,
   }
 
   componentWillMount() {
@@ -25,23 +33,14 @@ export class InputProducts extends React.Component<{}, {}> {
   }
 
   _fetch = async () => {
-    let data = await mpxTableUtil.fetchTableJson(tableName)
+    let data = await mpxTableUtil.fetchTableJson(apiName)
     // Filter out NONE row
     data = _.filter(data, c => c.proddesc !== 'NONE')
     this.setState({ data })
   }
 
-  _onUpdateCell = (newValue: any, column: IGridColumn, dataRow: any) => {
-    console.log('update', newValue, column.header.dataItem, dataRow.id)
-    dataRow[column.header.dataItem] = newValue
-    this.setState({ data: this.state.data })
-
-    mpxTableUtil.updateTable(
-      'products',
-      dataRow.prodid,
-      column.header.dataItem,
-      newValue
-    )
+  _onUpdateCell = async (newValue: any, column: IGridColumn, dataRow: any) => {
+    await inputTableHelper.updateRow(this, apiName, idColumn, dataRow[idColumn], column.header.dataItem, newValue)
   }
 
   _onToggleShowAdvanced = () => {
@@ -52,24 +51,42 @@ export class InputProducts extends React.Component<{}, {}> {
   }
 
   _onDeleteSelectedRows = async () => {
-    await inputTableHelper.deleteSelectedRows(this, tableName, idColumn)    
+    await inputTableHelper.deleteSelectedRows(this, apiName, idColumn)    
   }
 
   _onAddRow = async () => {
-    await inputTableHelper.addNewRow(this, tableName, idColumn)   
+    await inputTableHelper.addNewRow(this, apiName, idColumn)   
   }
 
   _onSelectRow = (dataRow, isSelected, mode) => {
     inputTableHelper.selectRow(this, dataRow, isSelected, mode)  
   }
 
+  _onClose_dialogError = () => {
+    this.setState({ hasError: false })
+  }
+
   render() {
+
+    // Get our mode
+    const mode = paramsParser.getUrlParameter('mode')
+
+    if(mode === 'operations') {
+      return (<InputProductsOperations />)
+    }
+    if(mode === 'routings') {
+      return (<InputProductsRoutings />)
+    }
+    if(mode === 'ibom') {
+      return (<InputProductsIbom />)
+    }
+
     return (
       <div>
         <GridTitleBar
           title="Products"
           showAdvanced={this.state.showAdvanced}
-          onToggleShowAdvanced={this._onToggleShowAdvanced}
+          onToggleShowAdvanced={this._onToggleShowAdvanced}        
           onAdd={this._onAddRow}
           onDeleteSelected={this._onDeleteSelectedRows}
           hasSelected={this.state.selectedRows.length > 0}
@@ -82,6 +99,7 @@ export class InputProducts extends React.Component<{}, {}> {
           selectedRows={this.state.selectedRows}
           onSelectRow={this._onSelectRow}
         />
+         <DialogError isOpen={this.state.hasError} error={this.state.error} onClose={this._onClose_dialogError} />
       </div>
     )
   }

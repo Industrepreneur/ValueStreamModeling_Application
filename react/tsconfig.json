@@ -32,7 +32,7 @@
       "Utilities/*": ["src/utilities/*"],
       "components/*": ["client/components/*"],
       "@client/components/*": ["client/components/*"],
-      "@ZenComponents/*": ["ZenComponents/*"]
+      "@zen-components/*": ["zen-components/*"]
     } 
 
   },
