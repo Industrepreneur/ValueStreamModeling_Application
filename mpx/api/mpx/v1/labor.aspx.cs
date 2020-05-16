@@ -22,6 +22,28 @@ public partial class api_v1_products : System.Web.UI.Page
     [WebMethod(EnableSession = true)]
     public static string updateRow(string id, string columnName, string newValue)
     {
+        // Check rules
+        var rules = new RulesEngine(newValue, columnName);
+        rules.checkColumn("labordesc")
+          .required();
+        rules.checkColumn("grpsiz") // Qty
+          .required()
+          .number()
+          .negativeOneOrGreaterThanZero();
+        rules.checkColumn("ot") // Overtime %
+          .required()
+          .number()
+          .greaterThan(-100);
+        rules.checkColumn("abst") // Inefficiency
+          .required()
+          .number()
+          .inRange(0, 99.99);
+
+        if (rules.HasError)
+        {
+            return MpxTableUtil.CreateError(rules.Error);
+        }
+
         return MpxTableUtil.UpdateRow(getSource(), TableName, IdColumn, id, columnName, newValue);
     }
 

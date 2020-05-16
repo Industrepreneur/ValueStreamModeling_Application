@@ -26,6 +26,11 @@ public static class MpxTableUtil
         return "[" + text + "]";
     }
 
+    public static string CreateError(string errorMessage)
+    {
+        return "err|" + errorMessage;
+    }
+
     private static string CreateConnectionString(string source)
     {
         return "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=" + source + ";";
@@ -105,7 +110,7 @@ public static class MpxTableUtil
                 var numRowsAffected = cmd.ExecuteNonQuery();
                 if (numRowsAffected != 1)
                 {
-                    result = "err|rows affected" + numRowsAffected;
+                    result = CreateError("rows affected" + numRowsAffected);
                 }
                 else
                 {
@@ -114,7 +119,7 @@ public static class MpxTableUtil
             },
             (error) =>
             {
-                result = "err|" + error;
+                result = CreateError(error);
                 _nextId = -1;
             }
         );
@@ -133,7 +138,7 @@ public static class MpxTableUtil
                 var numRowsAffected = cmd.ExecuteNonQuery();
                 if (numRowsAffected != 1)
                 {
-                    result = "err|rows affected" + numRowsAffected;
+                    result = CreateError("rows affected" + numRowsAffected);
                 }
                 else
                 {
@@ -142,7 +147,7 @@ public static class MpxTableUtil
             },
             (error) =>
             {
-                result = "err|" + error;
+                result = CreateError(error);
             }
         );
         return result;
@@ -163,16 +168,16 @@ public static class MpxTableUtil
                 var numRowsAffected = cmd.ExecuteNonQuery();
                 if (numRowsAffected != 1)
                 {
-                    result = "err|rows affected" + numRowsAffected;
+                    result = CreateError("rows affected" + numRowsAffected);
                 }
                 else
                 {
-                    result = "ok|" + id;
+                    result = "ok|" + newValue;
                 }
             },
             (error) =>
             {
-                result = "err|" + error;
+                result = CreateError(error);
             }
         );
         return result;

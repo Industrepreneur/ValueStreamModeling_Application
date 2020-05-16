@@ -9,6 +9,8 @@ public class ApiUtil
     public const string MAIN_USER_DATABASE = "mpxmdb.mdb";
     private static readonly string maxUtilQuery = "SELECT tblgeneral.utlimit FROM tblgeneral";
 
+    public const bool APIDevMode = true;
+
     //THIS SHOULD BE SetUserModelDirectoryPath
     public static string GetUserDatabasePath(string userDir)
     {
@@ -47,7 +49,7 @@ public class ApiUtil
         // Only in debug mode, load a particular user
         if (HttpContext.Current.IsDebuggingEnabled)
         {
-            if (session.Count == 0)
+            if (session.Count == 0 || APIDevMode)
             {
                 // use a test account
                 return GetUserDatabasePath("stevie3\\");

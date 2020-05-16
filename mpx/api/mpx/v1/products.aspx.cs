@@ -22,6 +22,24 @@ public partial class api_v1_products : System.Web.UI.Page
     [WebMethod(EnableSession = true)]
     public static string updateRow(string id, string columnName, string newValue)
     {
+
+        // Check rules
+        var rules = new RulesEngine(newValue, columnName);
+        rules.checkColumn("enddemd") 
+          .number()
+          .greaterThanOrEqual(0);
+        rules.checkColumn("lotsiz") 
+          .number()
+          .greaterThan(0);
+        rules.checkColumn("varbility")
+         .number()
+         .greaterThanOrEqual(0);
+
+        if (rules.HasError)
+        {
+            return MpxTableUtil.CreateError(rules.Error);
+        }
+
         return MpxTableUtil.UpdateRow(getSource(), TableName, IdColumn, id, columnName, newValue);
     }
 
@@ -47,4 +65,9 @@ public partial class api_v1_products : System.Web.UI.Page
         return MpxTableUtil.SelectAll(getSource(), TableName);
     }
 
+    [WebMethod(EnableSession = true)]
+    public static TableResults selectList(string columnName)
+    {
+        return MpxTableUtil.SelectList(getSource(), TableName, columnName);
+    }
 }

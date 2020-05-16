@@ -1,5 +1,4 @@
 ﻿using System;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
@@ -11,7 +10,7 @@ public partial class whatif_c : DbPage {
     ClassF classE1_1;
 
     public whatif_c() {
-        PAGENAME = "whatif_c.aspx";
+        PAGENAME = "/scenarios/create.aspx";
     }
 
 
